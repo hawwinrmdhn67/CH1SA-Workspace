@@ -72,19 +72,28 @@ func main() {
 	r.Use(gin.Recovery())
 
 	var origins []string
-	for _, o := range strings.Split(cfg.AllowedOrigin, ",") {
+	for _, o := range strings.Split(cfg.CORSOrigins, ",") {
 		origins = append(origins, strings.TrimSpace(o))
 	}
 
 	// CORS Configuration
-	r.Use(cors.New(cors.Config{
+	corsMiddleware := cors.New(cors.Config{
 		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	}))
+	})
+	r.Use(corsMiddleware)
+
+	r.NoRoute(corsMiddleware, func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+	})
+	
+	r.NoMethod(corsMiddleware, func(c *gin.Context) {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method Not Allowed"})
+	})
 
 	// Routes
 	r.GET("/health", func(c *gin.Context) {

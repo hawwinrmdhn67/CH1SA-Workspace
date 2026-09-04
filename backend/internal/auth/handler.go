@@ -33,13 +33,14 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie(
 		"chisa_session",
 		session.ID.String(),
 		int(time.Until(session.ExpiresAt).Seconds()),
 		"/",
 		"",
-		false, // Set to true in production with HTTPS
+		true,  // Secure (required for SameSite=None)
 		true,  // HttpOnly
 	)
 
@@ -54,13 +55,14 @@ func (h *Handler) Logout(c *gin.Context) {
 		}
 	}
 
+	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie(
 		"chisa_session",
 		"",
 		-1,
 		"/",
 		"",
-		false,
+		true,
 		true,
 	)
 

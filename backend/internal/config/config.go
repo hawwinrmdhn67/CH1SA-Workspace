@@ -10,7 +10,7 @@ type Config struct {
 	Port          string
 	GroqAPIKey    string
 	GroqModel     string
-	AllowedOrigin string
+	CORSOrigins   string
 }
 
 func LoadConfig() *Config {
@@ -23,7 +23,7 @@ func LoadConfig() *Config {
 		Port:          getEnv("PORT", "8080"),
 		GroqAPIKey:    getEnv("GROQ_API_KEY", ""),
 		GroqModel:     getEnv("GROQ_MODEL", "openai/gpt-oss-120b"),
-		AllowedOrigin: getEnv("ALLOWED_ORIGIN", "http://localhost:3000"),
+		CORSOrigins:   getEnv("CORS_ORIGINS", "http://localhost:3000"),
 	}
 }
 
