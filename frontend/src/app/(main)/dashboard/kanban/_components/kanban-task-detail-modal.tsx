@@ -179,7 +179,7 @@ export function KanbanTaskDetailModal({ task, open, onOpenChange, onUpdateTask }
                   {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
                 </Badge>
               </h4>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
                 {task.subtasks.map((st) => (
                   <label
                     key={st.id}

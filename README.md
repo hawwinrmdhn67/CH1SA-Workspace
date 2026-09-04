@@ -27,12 +27,20 @@ Built to be a minimal and flexible alternative to cluttered dashboards, CH1SA fo
 
 ## Tech Stack
 
+### Frontend
 - **Framework**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4
 - **UI Components**: Shadcn UI
 - **Validation**: Zod
 - **Forms & State Management**: React Hook Form, Zustand
 - **Tables & Data Handling**: TanStack Table
 - **Tooling & DX**: Biome, Husky
+
+### Backend
+- **Language**: Go
+- **Framework**: Gin Web Framework
+- **Database**: PostgreSQL
+- **Migrations**: golang-migrate
+- **AI Integration**: Groq API
 
 ## Getting Started
 
