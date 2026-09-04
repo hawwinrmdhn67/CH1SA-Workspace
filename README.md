@@ -1,8 +1,8 @@
-# CHISA Workspace
+# CH1SA Workspace
 
-**CHISA Workspace** is a personal productivity and workspace management application featuring a clean, modular design.
+**CH1SA Workspace** is a personal productivity and workspace management application featuring a clean, modular design.
 
-Built to be a minimal and flexible alternative to cluttered dashboards, CHISA focuses strictly on what you need for managing your workspace and personal tasks efficiently.
+Built to be a minimal and flexible alternative to cluttered dashboards, CH1SA focuses strictly on what you need for managing your workspace and personal tasks efficiently.
 
 ## Features
 
