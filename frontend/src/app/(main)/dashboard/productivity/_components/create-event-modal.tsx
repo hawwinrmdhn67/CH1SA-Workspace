@@ -108,7 +108,6 @@ export function CreateEventModal({
         toast.success("Event updated successfully");
       } else {
         addEvent({
-          id: `EVT-${Date.now()}`,
           title: title.trim(),
           start: parsedStart,
           end: parsedEnd,

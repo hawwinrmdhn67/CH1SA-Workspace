@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { stateConfig } from "./task-card";
-import type { Subtask, Task, TaskPriority } from "./types";
+import type { Subtask, Task, TaskPriority, ColumnId } from "./types";
 
 const parseDate = (dateStr: string) => {
   if (!dateStr) return undefined;
@@ -67,7 +67,7 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
   const setIsOpen = onOpenChange ?? setInternalOpen;
   const [title, setTitle] = React.useState(task?.title ?? "");
   const [description, setDescription] = React.useState(task?.description ?? "");
-  const [state, setState] = React.useState<string>(task?.state ?? defaultState ?? "backlog");
+  const [state, setState] = React.useState<ColumnId>((task?.state as ColumnId) ?? (defaultState as ColumnId) ?? "backlog");
   const [priority, setPriority] = React.useState<TaskPriority>(task?.priority ?? "None");
 
   const [startDate, setStartDate] = React.useState<Date | undefined>(parseDate(task?.startDate ?? ""));
@@ -79,7 +79,7 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
     if (isOpen) {
       setTitle(task?.title ?? "");
       setDescription(task?.description ?? "");
-      setState(task?.state ?? defaultState ?? "backlog");
+      setState((task?.state as ColumnId) ?? (defaultState as ColumnId) ?? "backlog");
       setPriority(task?.priority ?? "None");
       setStartDate(parseDate(task?.startDate ?? ""));
       setDueDate(parseDate(task?.dueDate ?? ""));
@@ -195,7 +195,7 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>State</Label>
-              <Select value={state} onValueChange={setState}>
+              <Select value={state} onValueChange={(v) => setState(v as ColumnId)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>

@@ -72,9 +72,8 @@ export function KanbanColumn({
       )}
     >
       <div
-        className="flex items-center justify-between px-3 pt-2 pb-2"
-        {...columnSortable.attributes}
-        {...columnSortable.listeners}
+        className="flex items-center justify-between px-3 pt-2 pb-2 cursor-grab active:cursor-grabbing"
+        ref={columnSortable.handleRef}
       >
         <div className="min-w-0 flex items-center gap-2">
           {(() => {

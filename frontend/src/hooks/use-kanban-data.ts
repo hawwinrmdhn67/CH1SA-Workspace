@@ -37,7 +37,13 @@ const kanbanDateToApiDate = (dateStr?: string) => {
 };
 
 export function useKanbanTasks() {
-  const [board, setBoard] = useState<BoardState>({});
+  const [board, setBoard] = useState<BoardState>({
+    backlog: [],
+    todo: [],
+    "in-progress": [],
+    done: [],
+    cancelled: [],
+  });
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -45,7 +51,13 @@ export function useKanbanTasks() {
     try {
       const apiTasks = await getTasks();
 
-      const newBoard: BoardState = {};
+      const newBoard: BoardState = {
+        backlog: [],
+        todo: [],
+        "in-progress": [],
+        done: [],
+        cancelled: [],
+      };
       for (const key of Object.keys(initialBoard) as ColumnId[]) {
         newBoard[key] = [...initialBoard[key]];
       }
@@ -101,15 +113,15 @@ export function useKanbanTasks() {
   const updateTaskState = useCallback(
     (taskId: string, currentColumnId: string, newStateId: string) => {
       setBoard((prevBoard) => {
-        const taskToMove = prevBoard[currentColumnId]?.find((t) => t.id === taskId);
+        const taskToMove = prevBoard[currentColumnId as ColumnId]?.find((t) => t.id === taskId);
         if (!taskToMove) return prevBoard;
 
         const newBoard = { ...prevBoard };
-        newBoard[currentColumnId] = newBoard[currentColumnId].filter((t) => t.id !== taskId);
+        newBoard[currentColumnId as ColumnId] = newBoard[currentColumnId as ColumnId].filter((t) => t.id !== taskId);
 
         const updatedTask = { ...taskToMove, state: newStateId as ColumnId };
-        if (!newBoard[newStateId]) newBoard[newStateId] = [];
-        newBoard[newStateId] = [updatedTask, ...newBoard[newStateId]];
+        if (!newBoard[newStateId as ColumnId]) newBoard[newStateId as ColumnId] = [];
+        newBoard[newStateId as ColumnId] = [updatedTask, ...newBoard[newStateId as ColumnId]];
 
         setTasks(Object.values(newBoard).flat());
         return newBoard;

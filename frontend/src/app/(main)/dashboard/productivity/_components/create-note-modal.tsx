@@ -40,10 +40,8 @@ export function CreateNoteModal({
     if (!title.trim() || !content.trim()) return;
 
     addNote({
-      id: `NOTE-${Date.now()}`,
       title: title.trim(),
       content: content.trim(),
-      date: new Date().toISOString(),
     });
 
     toast.success("Note created successfully");

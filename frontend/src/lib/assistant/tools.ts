@@ -1,7 +1,7 @@
-import { useEventsStore } from "@/app/(main)/dashboard/calendar/_components/use-events";
 import { useFileManager } from "@/app/(main)/dashboard/file-manager/_components/use-file-manager";
-import { useNotesStore } from "@/app/(main)/dashboard/notes/_components/use-notes";
 import { addTaskGlobally, deleteTaskGlobally, updateTaskGlobally } from "@/hooks/use-kanban-data";
+import { createEvent, deleteEvent, getEvents, updateEvent } from "@/lib/api/calendar";
+import { createNote, deleteNote, getNotes, updateNote } from "@/lib/api/notes";
 
 import type { ActionType, ToolResult } from "./types";
 
@@ -67,62 +67,63 @@ export const executeTool = async (type: ActionType, payload: any): Promise<ToolR
 
       // --- EVENTS ---
       case "create_event":
-        useEventsStore.getState().addEvent({
-          id: `event-${Date.now()}`,
+        await createEvent({
           title: payload.title,
-          start: payload.date,
-          allDay: payload.allDay !== false,
-          calendarId: payload.calendar || "Personal",
+          date: payload.date,
+          all_day: payload.allDay !== false,
+          calendar: payload.calendar || "personal",
         });
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Event added." };
 
       case "update_event":
-        useEventsStore.getState().updateEvent(payload.id, {
+        await updateEvent(payload.id, {
           title: payload.title,
-          start: payload.date,
+          date: payload.date,
         });
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Event updated." };
 
       case "delete_event":
-        useEventsStore.getState().deleteEvent(payload.id);
+        await deleteEvent(payload.id);
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Event deleted." };
 
       case "search_events":
       case "get_event": {
-        const events = useEventsStore.getState().events;
+        const events = await getEvents();
         const compact = events
-          .map((e) => ({ id: e.id, title: e.title, start: e.start, allDay: e.allDay }))
+          .map((e) => ({ id: e.id, title: e.title, start: e.date, allDay: e.all_day }))
           .slice(0, 10);
         return { success: true, message: JSON.stringify(compact) };
       }
 
       // --- NOTES ---
       case "create_note": {
-        const newNote = {
-          id: `note-${Date.now()}`,
+        await createNote({
           title: payload.title || "Untitled Note",
           content: payload.content || "",
-          date: new Date().toISOString(),
-        };
-        useNotesStore.getState().addNote(newNote);
+        });
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Note created." };
       }
 
       case "update_note":
-        useNotesStore.getState().updateNote(payload.id, {
+        await updateNote(payload.id, {
           title: payload.title,
           content: payload.content,
-          date: new Date().toISOString(),
         });
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Note updated." };
 
       case "delete_note":
-        useNotesStore.getState().deleteNote(payload.id);
+        await deleteNote(payload.id);
+        window.dispatchEvent(new Event("workspace_updated"));
         return { success: true, message: "Note deleted." };
 
       case "search_notes":
       case "get_note": {
-        const notes = useNotesStore.getState().notes;
+        const notes = await getNotes();
         const compact = notes
           .map((n) => ({ id: n.id, title: n.title, content: n.content.substring(0, 300) }))
           .slice(0, 5);

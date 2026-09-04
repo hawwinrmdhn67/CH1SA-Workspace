@@ -1,4 +1,11 @@
-export type ColumnId = string;
+export type TaskStatus =
+  | "backlog"
+  | "todo"
+  | "in-progress"
+  | "done"
+  | "cancelled";
+
+export type ColumnId = TaskStatus;
 
 export type Subtask = {
   id: string;
@@ -40,7 +47,7 @@ export type Task = {
   id: string;
   title: string;
   description: string;
-  state?: string;
+  state?: TaskStatus;
   priority: TaskPriority;
   startDate?: string;
   dueDate: string;

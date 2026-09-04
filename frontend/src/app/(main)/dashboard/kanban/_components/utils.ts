@@ -2,7 +2,7 @@ import { columnIds } from "./data";
 import type { BoardState, ColumnId } from "./types";
 
 function isColumnId(id: string): id is ColumnId {
-  return columnIds.includes(id as ColumnId);
+  return (columnIds as readonly string[]).includes(id);
 }
 
 export function findColumnId(board: BoardState, id: string): ColumnId | undefined {

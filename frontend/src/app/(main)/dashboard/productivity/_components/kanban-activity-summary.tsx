@@ -10,7 +10,7 @@ export function KanbanActivitySummary() {
 
   const backlogCount = tasks.filter((t) => t.state === "backlog" || !t.state).length;
   const todoCount = tasks.filter((t) => t.state === "todo").length;
-  const inProgressCount = tasks.filter((t) => t.state === "in-progress" || t.state === "in-review").length;
+  const inProgressCount = tasks.filter((t) => t.state === "in-progress").length;
   const doneCount = tasks.filter((t) => t.state === "done").length;
   const cancelledCount = tasks.filter((t) => t.state === "cancelled").length;
 

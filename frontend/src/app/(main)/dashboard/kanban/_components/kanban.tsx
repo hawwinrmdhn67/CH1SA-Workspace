@@ -164,7 +164,7 @@ export function Kanban({ initialBoard }: KanbanProps) {
         return {
           ...prev,
           [columnId]: prev[columnId].filter((t) => t.id !== taskId),
-          [updates.state as string]: [updatedTask, ...(prev[updates.state as string] || [])],
+          [updates.state as ColumnId]: [updatedTask, ...(prev[updates.state as ColumnId] || [])],
         };
       });
       updateTaskGlobally(taskId, updates);
@@ -230,11 +230,11 @@ export function Kanban({ initialBoard }: KanbanProps) {
     if (source.type === "column") {
       setColumnOrder((currentOrder) => move(currentOrder, event));
     } else if (source.type === "task") {
-      let targetState = "";
+      let targetState: ColumnId | "" = "";
       setBoard((prev) => {
         const newBoard = { ...prev };
-        for (const key of Object.keys(newBoard)) {
-          newBoard[key] = newBoard[key].map((t) => {
+        for (const key of Object.keys(newBoard) as ColumnId[]) {
+          newBoard[key] = newBoard[key].map((t: Task) => {
             if (t.id === source.data.task.id && t.state !== key) {
               targetState = key;
               return { ...t, state: key };
@@ -248,7 +248,7 @@ export function Kanban({ initialBoard }: KanbanProps) {
       });
 
       if (targetState) {
-         updateTaskGlobally(source.data.task.id, { state: targetState });
+         updateTaskGlobally(source.data.task.id, { state: targetState as ColumnId });
       }
     }
   }
