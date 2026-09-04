@@ -1,28 +1,17 @@
 import type { ActionType, PendingAction } from "./types";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_ASSISTANT_BACKEND_URL || "http://localhost:8080/api/assistant";
-
+import { fetchApi } from "../api/client";
 export const processMessage = async (
   text: string,
   conversationId = "default-session",
 ): Promise<{ text: string; pendingAction?: PendingAction }> => {
   try {
-    const res = await fetch(`${BACKEND_URL}/chat`, {
+    const data = await fetchApi("/assistant/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         message: text,
         conversationId,
       }),
     });
-
-    if (!res.ok) {
-      throw new Error(`Backend returned status ${res.status}`);
-    }
-
-    const data = await res.json();
 
     let pendingAction: PendingAction | undefined;
     if (data.action) {
@@ -58,22 +47,13 @@ export const submitConfirmation = async (
   confirmationId: string,
 ): Promise<{ text: string; data?: any; success: boolean }> => {
   try {
-    const res = await fetch(`${BACKEND_URL}/confirm`, {
+    const data = await fetchApi("/assistant/confirm", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         conversationId,
         confirmationId,
       }),
     });
-
-    if (!res.ok) {
-      throw new Error(`Backend returned status ${res.status}`);
-    }
-
-    const data = await res.json();
     return {
       text: data.message || "Action processed.",
       success: data.status === "success",
@@ -95,11 +75,8 @@ export const submitToolResult = async (
   message: string,
 ): Promise<{ text: string }> => {
   try {
-    const res = await fetch(`${BACKEND_URL}/tool-result`, {
+    const data = await fetchApi("/assistant/tool-result", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         conversationId,
         confirmationId,
@@ -107,12 +84,6 @@ export const submitToolResult = async (
         message,
       }),
     });
-
-    if (!res.ok) {
-      throw new Error(`Backend returned status ${res.status}`);
-    }
-
-    const data = await res.json();
     return {
       text: data.message || "Action processed.",
     };

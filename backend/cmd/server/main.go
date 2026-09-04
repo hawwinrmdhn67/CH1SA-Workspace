@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"chisa-assistant-backend/internal/assistant"
 	"chisa-assistant-backend/internal/auth"
@@ -70,9 +71,14 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
+	var origins []string
+	for _, o := range strings.Split(cfg.AllowedOrigin, ",") {
+		origins = append(origins, strings.TrimSpace(o))
+	}
+
 	// CORS Configuration
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{cfg.AllowedOrigin},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Link"},

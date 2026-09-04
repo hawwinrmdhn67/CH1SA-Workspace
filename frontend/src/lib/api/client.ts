@@ -1,4 +1,8 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL is not defined in the environment variables.");
+}
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "") + "/api";
 
 export class ApiError extends Error {
   status: number;
@@ -13,7 +17,8 @@ export class ApiError extends Error {
 }
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${normalizedEndpoint}`;
 
   const defaultHeaders: Record<string, string> = {
     "Content-Type": "application/json",
