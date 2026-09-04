@@ -33,16 +33,23 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteNoneMode)
-	c.SetCookie(
-		"chisa_session",
-		session.ID.String(),
-		int(time.Until(session.ExpiresAt).Seconds()),
-		"/",
-		"",
-		true,  // Secure (required for SameSite=None)
-		true,  // HttpOnly
-	)
+	// Add Partitioned attribute for CHIPS (Cookies Having Independent Partitioned State)
+	// This ensures the cross-origin session cookie is accepted by modern browsers even when 3P cookies are blocked.
+	cookieValue := session.ID.String()
+	maxAge := int(time.Until(session.ExpiresAt).Seconds())
+	
+	cookie := &http.Cookie{
+		Name:     "chisa_session",
+		Value:    cookieValue,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+	
+	// Add Partitioned manually because gin's SetCookie doesn't support it yet
+	c.Writer.Header().Add("Set-Cookie", cookie.String()+"; Partitioned")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
 }
@@ -55,16 +62,16 @@ func (h *Handler) Logout(c *gin.Context) {
 		}
 	}
 
-	c.SetSameSite(http.SameSiteNoneMode)
-	c.SetCookie(
-		"chisa_session",
-		"",
-		-1,
-		"/",
-		"",
-		true,
-		true,
-	)
+	clearCookie := &http.Cookie{
+		Name:     "chisa_session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+	c.Writer.Header().Add("Set-Cookie", clearCookie.String()+"; Partitioned")
 
 	c.Status(http.StatusNoContent)
 }
