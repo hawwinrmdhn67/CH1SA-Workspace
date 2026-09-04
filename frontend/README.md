@@ -40,12 +40,12 @@ You can run this project locally by following these steps:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/chisa-workspace.git
+   git clone https://github.com/hawwinrmdhn67/CH1SA-Workspace.git
    ```
    
 2. **Navigate into the project**
    ```bash
-   cd chisa-workspace
+   cd CH1SA Workspace
    ```
    
 3. **Install dependencies**
