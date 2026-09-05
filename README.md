@@ -42,6 +42,13 @@ Built to be a minimal and flexible alternative to cluttered dashboards, CH1SA fo
 - **Migrations**: golang-migrate
 - **AI Integration**: Groq API
 
+## External APIs
+
+This workspace integrates the following third-party APIs to enhance its functionality:
+
+- **Groq API**: Powers the CH1SA Assistant for AI-driven task management and conversational capabilities.
+- **APIHariLibur_V2**: An open-source JSON API by *guangrei* used by the Calendar module to fetch and display Indonesian national holidays automatically.
+
 ## Getting Started
 
 You can run this project locally by following these steps:
