@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import type { CalendarEvent } from "./use-events";
 
-const API_BASE_URL = "https://date.nager.at/api/v3/PublicHolidays";
+const API_BASE_URL = "https://raw.githubusercontent.com/guangrei/APIHariLibur_V2/main/calendar.json";
 
 export function useIndonesiaHolidays(year: number) {
   const [holidays, setHolidays] = useState<CalendarEvent[]>([]);
@@ -21,26 +21,31 @@ export function useIndonesiaHolidays(year: number) {
       setIsLoading(true);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/${year}/ID`);
+        const response = await fetch(API_BASE_URL);
         if (!response.ok) {
           throw new Error(`Failed to fetch holidays: ${response.statusText}`);
         }
 
         const data = await response.json();
+        const holidayEvents: CalendarEvent[] = [];
 
-        const holidayEvents: CalendarEvent[] = data.map((h: any) => ({
-          id: `holiday-ID-${h.date}`,
-          title: h.localName || h.name,
-          start: h.date,
-          allDay: true,
-          calendarId: "indonesia-holidays",
-          source: "nager-date",
-          readOnly: true,
-        }));
+        for (const [dateString, info] of Object.entries(data)) {
+          const h = info as any;
+          if (h.holiday && dateString.startsWith(year.toString())) {
+            holidayEvents.push({
+              id: `holiday-ID-${dateString}`,
+              title: h.summary ? h.summary.join(", ") : "Hari Libur Nasional",
+              start: dateString,
+              allDay: true,
+              calendarId: "indonesia-holidays",
+              source: "github-apiharilibur",
+              readOnly: true,
+            });
+          }
+        }
 
         if (isMounted) {
           setHolidays((prev) => {
-            // Merge while preventing duplicates
             const existingIds = new Set(prev.map((e) => e.id));
             const newHolidays = holidayEvents.filter((h) => !existingIds.has(h.id));
             return [...prev, ...newHolidays];

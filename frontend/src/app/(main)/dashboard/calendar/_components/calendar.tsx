@@ -80,7 +80,6 @@ export function Calendar() {
     return filteredEvents.filter((event) => {
       let start: Date;
       if (typeof event.start === "string" && event.start.length === 10) {
-        // Parse YYYY-MM-DD as local midnight to match FullCalendar's default timeZone: 'local'
         const [y, m, d] = event.start.split("-").map(Number);
         start = new Date(y, m - 1, d);
       } else {

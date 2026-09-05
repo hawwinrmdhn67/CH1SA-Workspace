@@ -25,8 +25,6 @@ function scrollToBottom(force = false) {
       container.scrollTop = container.scrollHeight;
       return;
     }
-    // Use a large threshold (500px) to allow for sudden height jumps (like when a code block renders)
-    // while still letting the user stop auto-scroll if they intentionally scroll way up.
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 500;
     if (isNearBottom) {
       container.scrollTop = container.scrollHeight;
@@ -82,7 +80,6 @@ const markdownComponents = {
   ),
 };
 
-// A wrapper to give real AI responses a fast typewriter effect when they first appear
 function TypewriterMarkdown({ 
   content, 
   createdAt,
@@ -95,7 +92,6 @@ function TypewriterMarkdown({
   const [length, setLength] = React.useState(0);
   const prefersReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   
-  // Only animate if it's a freshly created message (within the last 2 seconds) and not reduced motion
   const isOld = Date.now() - createdAt > 2000;
   const shouldAnimate = !prefersReducedMotion && !isOld && !isInit;
 
@@ -111,7 +107,7 @@ function TypewriterMarkdown({
           clearInterval(interval);
           return content.length;
         }
-        return prev + 3; // Moderately fast appearance
+        return prev + 3; 
       });
       scrollToBottom(true);
     }, 10);
@@ -147,7 +143,6 @@ export function FloatingAssistant() {
     itemSize: avatarSize,
   });
 
-  // Calculate popover origin based on avatar position relative to screen center
   const [popupStyle, setPopupStyle] = React.useState<React.CSSProperties>({});
 
   React.useEffect(() => {
@@ -169,7 +164,6 @@ export function FloatingAssistant() {
     }
   }, [messages, isTyping, isOpen]);
 
-  // Handle escape key and outside clicks
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -184,7 +178,6 @@ export function FloatingAssistant() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isExpanded]);
 
-  // Body scroll lock
   React.useEffect(() => {
     if (isOpen && isExpanded) {
       document.body.style.overflow = "hidden";
@@ -194,7 +187,6 @@ export function FloatingAssistant() {
     return () => { document.body.style.overflow = ""; };
   }, [isOpen, isExpanded]);
 
-  // Initial greeting animation logic
   React.useEffect(() => {
     if (isOpen) {
       const initMsg = messages.find((m) => m.id === "init");
@@ -213,12 +205,12 @@ export function FloatingAssistant() {
         const timer = setTimeout(() => {
           setInitialGreetingState("typewriter");
           setTypewriterLength(0);
-        }, 400); // Reduced delay for better UX
+        }, 400); 
         
         return () => clearTimeout(timer);
       }
     }
-  }, [isOpen, messages]); // Do not put the ref in dependencies
+  }, [isOpen, messages]); 
 
   React.useEffect(() => {
     if (initialGreetingState === "typewriter") {
@@ -234,14 +226,14 @@ export function FloatingAssistant() {
             setInitialGreetingState("done");
             return textLen;
           }
-          return prev + 3; // Moderately fast appearance
+          return prev + 3; 
         });
         scrollToBottom(true);
       }, 10);
       
       return () => clearInterval(interval);
     }
-  }, [initialGreetingState, messages.length]); // Use messages.length so content changes don't interrupt it
+  }, [initialGreetingState, messages.length]); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,16 +248,12 @@ export function FloatingAssistant() {
       try {
         const response = await processMessage(userText);
 
-        // addMessage returns the generated ID
         const msgId = addMessage({
           role: "assistant",
           content: response.text,
           pendingAction: response.pendingAction,
         });
 
-        // Auto-execute read-only actions is no longer needed because
-        // the backend runs search queries synchronously now and won't
-        // return pendingAction for them!
       } catch (err) {
         addMessage({
           role: "assistant",
@@ -283,7 +271,6 @@ export function FloatingAssistant() {
     if (!confirm) {
       updateMessageAction(messageId, "cancelled");
       addMessage({ role: "assistant", content: "Action cancelled." });
-      // Tell backend we cancelled (this goes to tool-result for immediate failure)
       import("@/lib/assistant/provider").then(({ submitToolResult }) => {
         submitToolResult("default-session", confirmationId, false, "User cancelled the action");
       });
@@ -296,12 +283,9 @@ export function FloatingAssistant() {
     try {
       const { submitConfirmation, submitToolResult } = await import("@/lib/assistant/provider");
 
-      // Flow 1: Requires Go backend confirmation (destructive/writes)
       if (action.status === "pending" || action.status === "critical_pending") {
         const confirmRes = await submitConfirmation("default-session", confirmationId);
         if (confirmRes.success) {
-          // The Go backend ALREADY mutated the database for tasks, calendar, notes, AND file manager!
-          // We just need to refresh the frontend UI
           window.dispatchEvent(new Event("workspace_updated"));
 
           updateMessageAction(messageId, "executed");
@@ -326,7 +310,7 @@ export function FloatingAssistant() {
 
   return createPortal(
     <>
-      {/* Backdrop for expanded mode */}
+      {}
       {isOpen && isExpanded && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] transition-opacity animate-in fade-in duration-200" 
@@ -343,7 +327,7 @@ export function FloatingAssistant() {
         }}
         className="flex flex-col items-center justify-center"
       >
-        {/* Popover UI */}
+        {}
         {isOpen && (
           <div
             style={isExpanded ? {
@@ -357,7 +341,7 @@ export function FloatingAssistant() {
                 : "absolute rounded-xl border w-[90vw] sm:w-[380px] h-[500px] max-h-[80vh] mb-4"
             )}
           >
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
@@ -387,7 +371,7 @@ export function FloatingAssistant() {
             </div>
           </div>
 
-          {/* Chat Area */}
+          {}
           <div ref={scrollRef} id="assistant-scroll-container" className="flex-1 overflow-y-auto p-4 bg-card">
             <div className="flex flex-col gap-4">
               {messages.map((msg) => (
@@ -560,7 +544,7 @@ export function FloatingAssistant() {
             </div>
           )}
 
-          {/* Input Area */}
+          {}
           <div className="border-t bg-card p-3">
             <form id="floating-assistant-form" onSubmit={handleSubmit} className="flex gap-2">
               <Input
@@ -584,7 +568,7 @@ export function FloatingAssistant() {
         </div>
       )}
 
-      {/* Floating Avatar Button */}
+      {}
       <div
         {...handlers}
         className={cn(

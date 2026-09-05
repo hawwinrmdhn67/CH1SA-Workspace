@@ -20,8 +20,6 @@ export default function Home() {
     }
   }, [isAuthenticated, router]);
 
-  // Return a loading state or nothing while the initial authentication check runs
-  // to avoid route flicker.
   return (
     <div className="flex h-dvh w-full items-center justify-center">
       <Loader2 className="size-8 animate-spin text-muted-foreground" />

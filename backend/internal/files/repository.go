@@ -12,14 +12,14 @@ import (
 )
 
 type Repository interface {
-	// Folders
 	CreateFolder(ctx context.Context, folder *models.Folder) error
+	GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error)
 	ListFolders(ctx context.Context) ([]*models.Folder, error)
 	UpdateFolder(ctx context.Context, folder *models.Folder) error
 	DeleteFolder(ctx context.Context, id uuid.UUID) error
 
-	// Files
 	CreateFile(ctx context.Context, file *models.File) error
+	GetFile(ctx context.Context, id uuid.UUID) (*models.File, error)
 	ListFiles(ctx context.Context) ([]*models.File, error)
 	UpdateFile(ctx context.Context, file *models.File) error
 	DeleteFile(ctx context.Context, id uuid.UUID) error
@@ -31,7 +31,6 @@ func NewRepository() Repository {
 	return &repository{}
 }
 
-// Folders
 func (r *repository) CreateFolder(ctx context.Context, folder *models.Folder) error {
 	query := `
 		INSERT INTO folders (name, parent_folder_id, is_starred, created_at, updated_at)
@@ -54,6 +53,23 @@ func (r *repository) CreateFolder(ctx context.Context, folder *models.Folder) er
 		return fmt.Errorf("failed to create folder: %w", err)
 	}
 	return nil
+}
+
+func (r *repository) GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error) {
+	query := `SELECT id, name, parent_folder_id, is_starred, created_at, updated_at FROM folders WHERE id = $1`
+	folder := &models.Folder{}
+	err := database.Pool.QueryRow(ctx, query, id).Scan(
+		&folder.ID,
+		&folder.Name,
+		&folder.ParentID,
+		&folder.IsStarred,
+		&folder.CreatedAt,
+		&folder.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get folder: %w", err)
+	}
+	return folder, nil
 }
 
 func (r *repository) ListFolders(ctx context.Context) ([]*models.Folder, error) {
@@ -112,7 +128,6 @@ func (r *repository) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// Files
 func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
 	query := `
 		INSERT INTO files (id, name, folder_id, kind, size, is_starred, created_at, updated_at)
@@ -123,8 +138,6 @@ func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
 	file.CreatedAt = now
 	file.UpdatedAt = now
 
-	// We allow passing an explicit UUID for files because the frontend might pre-generate it
-	// to match with the IndexedDB blob mapping.
 	if file.ID == uuid.Nil {
 		file.ID = uuid.New()
 	}
@@ -144,6 +157,25 @@ func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	return nil
+}
+
+func (r *repository) GetFile(ctx context.Context, id uuid.UUID) (*models.File, error) {
+	query := `SELECT id, name, folder_id, kind, size, is_starred, created_at, updated_at FROM files WHERE id = $1`
+	file := &models.File{}
+	err := database.Pool.QueryRow(ctx, query, id).Scan(
+		&file.ID,
+		&file.Name,
+		&file.FolderID,
+		&file.Kind,
+		&file.Size,
+		&file.IsStarred,
+		&file.CreatedAt,
+		&file.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file: %w", err)
+	}
+	return file, nil
 }
 
 func (r *repository) ListFiles(ctx context.Context) ([]*models.File, error) {

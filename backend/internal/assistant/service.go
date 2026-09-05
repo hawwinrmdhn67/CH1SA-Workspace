@@ -15,14 +15,19 @@ import (
 	"chisa-assistant-backend/internal/notes"
 	"chisa-assistant-backend/internal/tasks"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
 type ChatSession struct {
-	Messages   []openai.ChatCompletionMessage
-	ToolCount  int
-	LastAccess time.Time
+	Messages    []openai.ChatCompletionMessage
+	ToolCount   int
+	LastAccess  time.Time
+	IsExecuting bool
 }
+
+type contextKey string
+const requestIDKey contextKey = "RequestID"
 
 type Service struct {
 	client         *openai.Client
@@ -61,7 +66,7 @@ func (s *Service) getOrCreateSession(conversationID string) *ChatSession {
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: SystemPrompt,
+				Content: SystemPrompt + "\n\nCurrent Date: " + time.Now().In(time.FixedZone("WIB", 7*3600)).Format("Monday, 2006-01-02"),
 			},
 		},
 		LastAccess: time.Now(),
@@ -70,27 +75,46 @@ func (s *Service) getOrCreateSession(conversationID string) *ChatSession {
 	return session
 }
 
-// ProcessMessage sends a message to Groq and handles the response
 func (s *Service) ProcessMessage(ctx context.Context, req ChatRequest) (ChatResponse, error) {
 	session := s.getOrCreateSession(req.ConversationID)
 
-	// Rate limiting logic could go here (e.g. check session.LastAccess frequency)
 	s.mu.Lock()
-	session.ToolCount = 0 // Reset tool count per request
+	if session.IsExecuting {
+		s.mu.Unlock()
+		return ChatResponse{Status: "error", Message: "Mohon tunggu, request sebelumnya sedang diproses."}, nil
+	}
+	session.IsExecuting = true
+	session.ToolCount = 0
 	session.Messages = append(session.Messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: req.Message,
 	})
 	s.mu.Unlock()
 
+	defer func() {
+		s.mu.Lock()
+		session.IsExecuting = false
+		s.mu.Unlock()
+	}()
+
+	reqID := uuid.New().String()
+	ctx = context.WithValue(ctx, requestIDKey, reqID)
+
 	return s.generateResponse(ctx, req.ConversationID, session)
 }
 
-// ConfirmAction executes a previously stored action (destructive/mutating actions)
 func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatResponse, error) {
+	session := s.getOrCreateSession(req.ConversationID)
+	
 	s.mu.Lock()
+	if session.IsExecuting {
+		s.mu.Unlock()
+		return ChatResponse{Status: "error", Message: "Mohon tunggu, request sebelumnya sedang diproses."}, nil
+	}
+	session.IsExecuting = true
 	action, exists := s.pendingActions[req.ConfirmationID]
 	if !exists {
+		session.IsExecuting = false
 		s.mu.Unlock()
 		return ChatResponse{
 			Status:  "error",
@@ -99,6 +123,7 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 	}
 
 	if action.Executed {
+		session.IsExecuting = false
 		s.mu.Unlock()
 		return ChatResponse{
 			Status:  "error",
@@ -107,6 +132,7 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 	}
 
 	if time.Now().After(action.ExpiresAt) {
+		session.IsExecuting = false
 		s.mu.Unlock()
 		return ChatResponse{
 			Status:  "error",
@@ -114,14 +140,15 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 		}, nil
 	}
 
-	// Mark as executed immediately to prevent duplicate executions
 	action.Executed = true
 	s.mu.Unlock()
 
-	// Execute the action (generates the final data payload)
 	result := s.router.ExecuteTool(ctx, action.ToolName, action.Args)
 
 	if result.Status == "error" {
+		s.mu.Lock()
+		session.IsExecuting = false
+		s.mu.Unlock()
 		return ChatResponse{
 			Status:  "error",
 			Message: "Failed to execute action.",
@@ -129,8 +156,6 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 		}, nil
 	}
 
-	// Inform Groq that it succeeded so it can generate a final response
-	session := s.getOrCreateSession(req.ConversationID)
 	resultJSON, _ := json.Marshal(result)
 
 	s.mu.Lock()
@@ -139,30 +164,31 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 		Content:    string(resultJSON),
 		ToolCallID: req.ConfirmationID,
 	})
+	session.IsExecuting = false
 	s.mu.Unlock()
 
-	// Generate the final conversational response from Groq
-	resp, err := s.generateResponse(ctx, req.ConversationID, session)
-	if err != nil {
-		return resp, err
-	}
-
-	// But override the response to include the explicit success and data!
-	resp.Status = "success"
-	resp.Data = result.Data
-	return resp, nil
+	return ChatResponse{
+		Message: "Action confirmed and executed successfully.",
+		Status:  "success",
+		Data:    result.Data,
+	}, nil
 }
 
-// ProcessToolResult handles results from READ-ONLY actions executed on the frontend
 func (s *Service) ProcessToolResult(ctx context.Context, req ToolResultRequest) (ChatResponse, error) {
 	session := s.getOrCreateSession(req.ConversationID)
 
+	s.mu.Lock()
+	if session.IsExecuting {
+		s.mu.Unlock()
+		return ChatResponse{Status: "error", Message: "Mohon tunggu, request sebelumnya sedang diproses."}, nil
+	}
+	session.IsExecuting = true
+	
 	resultJSON, _ := json.Marshal(map[string]any{
 		"success": req.Success,
 		"message": req.Message,
 	})
 
-	s.mu.Lock()
 	session.Messages = append(session.Messages, openai.ChatCompletionMessage{
 		Role:       openai.ChatMessageRoleTool,
 		Content:    string(resultJSON),
@@ -170,10 +196,46 @@ func (s *Service) ProcessToolResult(ctx context.Context, req ToolResultRequest) 
 	})
 	s.mu.Unlock()
 
+	defer func() {
+		s.mu.Lock()
+		session.IsExecuting = false
+		s.mu.Unlock()
+	}()
+
+	reqID := uuid.New().String()
+	ctx = context.WithValue(ctx, requestIDKey, reqID)
+
 	return s.generateResponse(ctx, req.ConversationID, session)
 }
 
+
+func estimateTokens(messages []openai.ChatCompletionMessage, tools []openai.Tool) int {
+	size := 0
+	for _, m := range messages {
+		size += len(m.Role)
+		size += len(m.Content)
+		if m.Name != "" {
+			size += len(m.Name)
+		}
+		for _, tc := range m.ToolCalls {
+			size += len(tc.Function.Name)
+			size += len(tc.Function.Arguments)
+		}
+	}
+	for _, t := range tools {
+		size += len(t.Function.Name)
+		size += len(t.Function.Description)
+		if b, err := json.Marshal(t.Function.Parameters); err == nil {
+			size += len(b)
+		}
+	}
+	return size / 4
+}
+
 func (s *Service) generateResponse(ctx context.Context, conversationID string, session *ChatSession) (ChatResponse, error) {
+	reqID, _ := ctx.Value(requestIDKey).(string)
+	startTime := time.Now()
+
 	s.mu.RLock()
 	if session.ToolCount >= 8 {
 		s.mu.RUnlock()
@@ -183,15 +245,13 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		}, nil
 	}
 
-	// Truncate history to avoid token limits (keep system prompt + valid recent messages)
-	maxHistory := 10
+	maxHistory := 6
 	var messages []openai.ChatCompletionMessage
 	if len(session.Messages) > maxHistory+1 {
 		messages = make([]openai.ChatCompletionMessage, 0, maxHistory+1)
-		messages = append(messages, session.Messages[0]) // System prompt
+		messages = append(messages, session.Messages[0])
 		
 		startIndex := len(session.Messages) - maxHistory
-		// Advance startIndex to the nearest User message to avoid breaking tool call chains
 		for startIndex < len(session.Messages) && session.Messages[startIndex].Role != openai.ChatMessageRoleUser {
 			startIndex++
 		}
@@ -199,7 +259,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		if startIndex < len(session.Messages) {
 			messages = append(messages, session.Messages[startIndex:]...)
 		} else {
-			// Fallback: just include the very last message if we couldn't find a User message boundary
 			messages = append(messages, session.Messages[len(session.Messages)-1])
 		}
 	} else {
@@ -208,41 +267,77 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 	}
 	s.mu.RUnlock()
 
+	tools := GetToolDefinitions()
+	estimatedInputTokens := estimateTokens(messages, tools)
+	
+	// Soft internal budget
+	if estimatedInputTokens > 4000 && len(messages) > 3 {
+		log.Printf("[Request %s] Context is large (est: %d). Compacting.", reqID, estimatedInputTokens)
+		compact := []openai.ChatCompletionMessage{messages[0]}
+		compact = append(compact, messages[len(messages)-2:]...)
+		messages = compact
+		estimatedInputTokens = estimateTokens(messages, tools)
+	}
+
 	req := openai.ChatCompletionRequest{
 		Model:       s.model,
 		Messages:    messages,
-		Tools:       GetToolDefinitions(),
+		Tools:       tools,
 		Temperature: 0.2,
 		MaxTokens:   500,
 	}
 
-	resp, err := s.client.CreateChatCompletion(ctx, req)
-	if err != nil && strings.Contains(err.Error(), "413") && maxHistory > 3 {
-		log.Printf("Groq 413 Error received. Retrying with aggressive context reduction...")
+	var resp openai.ChatCompletionResponse
+	var err error
+	groqCalls := 0
 
-		s.mu.RLock()
-		extremeHistory := 3
-		var minimalMessages []openai.ChatCompletionMessage
-		if len(session.Messages) > extremeHistory+1 {
-			minimalMessages = make([]openai.ChatCompletionMessage, 0, extremeHistory+1)
-			minimalMessages = append(minimalMessages, session.Messages[0])
-			minimalMessages = append(minimalMessages, session.Messages[len(session.Messages)-extremeHistory:]...)
+	for attempts := 0; attempts < 2; attempts++ {
+		groqCalls++
+		resp, err = s.client.CreateChatCompletion(ctx, req)
+		if err == nil {
+			break
 		}
-		s.mu.RUnlock()
-
-		if minimalMessages != nil {
-			req.Messages = minimalMessages
-			resp, err = s.client.CreateChatCompletion(ctx, req)
+		
+		if strings.Contains(err.Error(), "429") {
+			log.Printf("[Request %s] Rate limited (429). Waiting 5s before retry...", reqID)
+			time.Sleep(5 * time.Second)
+			continue
 		}
+		
+		if strings.Contains(err.Error(), "413") && len(messages) > 3 {
+			log.Printf("[Request %s] 413 Error. Reducing context.", reqID)
+			compact := []openai.ChatCompletionMessage{messages[0]}
+			compact = append(compact, messages[len(messages)-2:]...)
+			req.Messages = compact
+			continue
+		}
+		break
 	}
 
+	duration := time.Since(startTime)
+
 	if err != nil {
-		log.Printf("Groq API Error: %v", err)
+		log.Printf("[Request %s] Failed: %v, Duration: %v, EstTokens: %d", reqID, err, duration, estimatedInputTokens)
+		
+		if strings.Contains(err.Error(), "429") {
+			return ChatResponse{
+				Message: "CHISA sedang mencapai batas AI sementara. Coba lagi dalam beberapa detik.",
+				Status:  "rate_limited",
+			}, nil
+		}
+
 		return ChatResponse{
 			Message: "I encountered an error. The conversation context might be too large.",
 			Status:  "error",
 		}, nil
 	}
+
+	actualInputTokens := resp.Usage.PromptTokens
+	actualOutputTokens := resp.Usage.CompletionTokens
+	totalTokens := resp.Usage.TotalTokens
+
+	log.Printf("[Request %s] Success - Duration: %v, Calls: %d, Input: %d, Output: %d, Total: %d", 
+		reqID, duration, groqCalls, actualInputTokens, actualOutputTokens, totalTokens)
 
 	if len(resp.Choices) == 0 {
 		return ChatResponse{Message: "I'm not sure how to respond to that.", Status: "success"}, nil
@@ -262,13 +357,11 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 
 		toolCall := message.ToolCalls[0]
 
-		// Parse arguments
 		var args map[string]interface{}
 		if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
 			args = make(map[string]interface{})
 		}
 
-		// Validation Layer: Protect Read-Only Indonesia Holidays
 		if toolCall.Function.Name == "update_event" || toolCall.Function.Name == "delete_event" {
 			if idStr, ok := args["id"].(string); ok {
 				if len(idStr) >= 7 && strings.HasPrefix(idStr, "holiday") {
@@ -284,7 +377,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 			}
 		}
 
-		// Validate Tool Call using Router
 		previewText, eval, err := s.router.ValidateToolCall(ctx, toolCall.Function.Name, args)
 		
 		if eval.Decision == PolicyClarify {
@@ -302,7 +394,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		}
 
 		if err != nil {
-			// Unsupported tool or missing required arguments
 			s.mu.Lock()
 			session.Messages = append(session.Messages, openai.ChatCompletionMessage{
 				Role:       openai.ChatMessageRoleTool,
@@ -323,7 +414,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		}
 
 		if eval.Decision == PolicyConfirm || eval.Decision == PolicyCritical {
-			// Store it in Go memory for 10 minutes
 			s.mu.Lock()
 			s.pendingActions[toolCall.ID] = &StoredAction{
 				ConfirmationID: toolCall.ID,
@@ -353,7 +443,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 				Action:  pendingAction,
 			}, nil
 		} else {
-			// Execute immediately on backend (PolicyAllow)
 			result := s.router.ExecuteTool(ctx, toolCall.Function.Name, args)
 			resultJSON, _ := json.Marshal(result)
 
@@ -365,7 +454,6 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 			})
 			s.mu.Unlock()
 
-			// Recurse to generate final response based on tool result
 			return s.generateResponse(ctx, conversationID, session)
 		}
 	}

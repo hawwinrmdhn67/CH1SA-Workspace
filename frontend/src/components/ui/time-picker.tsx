@@ -63,7 +63,7 @@ export function TimePicker({ value, onChange, id }: TimePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="w-auto p-3" align="start">
         <div className="flex gap-2">
-          {/* Hours */}
+          {}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-medium uppercase text-muted-foreground text-center">Hours</span>
             <div className="h-[200px] w-14 overflow-y-auto scrollbar-thin [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1 flex flex-col gap-1 pr-1">
@@ -81,7 +81,7 @@ export function TimePicker({ value, onChange, id }: TimePickerProps) {
             </div>
           </div>
           
-          {/* Minutes */}
+          {}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-medium uppercase text-muted-foreground text-center">Minutes</span>
             <div className="h-[200px] w-14 overflow-y-auto scrollbar-thin [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1 flex flex-col gap-1 pr-1">
@@ -99,7 +99,7 @@ export function TimePicker({ value, onChange, id }: TimePickerProps) {
             </div>
           </div>
 
-          {/* AM/PM */}
+          {}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-medium uppercase text-muted-foreground text-center">AM/PM</span>
             <div className="flex flex-col gap-1">

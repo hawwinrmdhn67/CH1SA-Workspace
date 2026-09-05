@@ -20,7 +20,6 @@ export function AccountSettingsDialog({ open, onOpenChange }: AccountSettingsDia
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Load the recovery code whenever the dialog is opened
   useEffect(() => {
     if (open) {
       async function load() {

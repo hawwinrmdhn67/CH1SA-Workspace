@@ -22,8 +22,8 @@ type Task struct {
 	Description string    `json:"description"`
 	Status      string    `json:"status"`
 	Priority    string    `json:"priority"`
-	StartDate   *string   `json:"startDate,omitempty"` // YYYY-MM-DD
-	DueDate     *string   `json:"dueDate,omitempty"`   // YYYY-MM-DD
+	StartDate   *string   `json:"startDate,omitempty"`
+	DueDate     *string   `json:"dueDate,omitempty"`
 	Subtasks    []Subtask `json:"subtasks"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

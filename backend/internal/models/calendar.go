@@ -11,7 +11,7 @@ type CalendarEvent struct {
 	ID          uuid.UUID `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Date        string    `json:"date"` // YYYY-MM-DD
+	Date        string    `json:"date"`
 	StartTime   *string   `json:"start_time,omitempty"`
 	EndTime     *string   `json:"end_time,omitempty"`
 	AllDay      bool      `json:"all_day"`

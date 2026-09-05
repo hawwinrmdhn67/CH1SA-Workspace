@@ -83,7 +83,6 @@ export default function Page() {
     return <div className="flex h-[400px] items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
-  // Derive current folder path
   const breadcrumbs: { id: string; name: string }[] = [];
   let curr = currentFolderId;
   while (curr) {
@@ -96,7 +95,6 @@ export default function Page() {
     }
   }
 
-  // Filter folders
   let visibleFolders = folders.filter((f) => f.parentId === currentFolderId);
   if (searchQuery) {
     visibleFolders = folders.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -105,26 +103,19 @@ export default function Page() {
   if (filterType !== "all") {
     if (filterType === "starred") visibleFolders = visibleFolders.filter((f) => f.starred);
     else if (filterType === "shared") visibleFolders = visibleFolders.filter((f) => false);
-    // For file-specific types like pdf, document, etc., do NOT filter out folders.
-    // They remain visible as per requirements.
   }
 
-  // Sort folders
   visibleFolders.sort((a, b) => {
     if (sortType === "name") return a.name.localeCompare(b.name);
     if (sortType === "size") {
-      // Calculate sizes dynamically for sorting if we want, or just fallback to 0 if not calculated yet.
-      // Wait, we need the total size to sort. Let's compute it.
       const getFolderSize = (folderId: string) => {
         return files.filter((file) => file.folderId === folderId).reduce((acc, file) => acc + file.size, 0);
       };
       return getFolderSize(b.id) - getFolderSize(a.id);
     }
-    // "modified" corresponds to updatedAt for folders
     return b.updatedAt - a.updatedAt;
   });
 
-  // Map to UI model
   const uiFolders: FileManagerFolder[] = visibleFolders.map((f) => {
     const childFiles = files.filter((file) => file.folderId === f.id);
     const totalSize = childFiles.reduce((acc, file) => acc + file.size, 0);
@@ -138,7 +129,6 @@ export default function Page() {
     };
   });
 
-  // Filter files
   let visibleFiles = files;
 
   if (searchQuery) {
@@ -150,18 +140,16 @@ export default function Page() {
   if (filterType !== "all") {
     if (filterType === "starred") visibleFiles = visibleFiles.filter((f) => f.starred);
     else if (filterType === "shared")
-      visibleFiles = visibleFiles.filter((f) => false); // no shared property yet
+      visibleFiles = visibleFiles.filter((f) => false); 
     else visibleFiles = visibleFiles.filter((f) => f.kind === filterType);
   }
 
-  // Sort files
   visibleFiles.sort((a, b) => {
     if (sortType === "name") return a.name.localeCompare(b.name);
     if (sortType === "size") return b.size - a.size;
     return b.modifiedAt - a.modifiedAt;
   });
 
-  // Map to UI model
   const uiFiles: FileManagerFile[] = visibleFiles.map((f) => ({
     id: f.id,
     name: f.name,

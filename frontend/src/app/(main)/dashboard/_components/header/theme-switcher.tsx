@@ -25,13 +25,13 @@ export function ThemeSwitcher() {
 
   return (
     <Button size="icon" onClick={cycleTheme} aria-label={`Current theme: ${themeMode}. Click to cycle themes`}>
-      {/* SYSTEM */}
+      {}
       <Monitor className="hidden [html[data-theme-mode=system]_&]:block" />
 
-      {/* DARK (resolved) */}
+      {}
       <Sun className="hidden dark:block [html[data-theme-mode=system]_&]:hidden" />
 
-      {/* LIGHT (resolved) */}
+      {}
       <Moon className="block dark:hidden [html[data-theme-mode=system]_&]:hidden" />
     </Button>
   );

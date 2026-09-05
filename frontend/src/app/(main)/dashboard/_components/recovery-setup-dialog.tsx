@@ -43,7 +43,6 @@ export function RecoverySetupDialog() {
   });
 
   useEffect(() => {
-    // Check if recovery code exists when the dashboard loads
     async function initRecovery() {
       const existingCode = await fetchRecoveryCode();
       if (!existingCode) {
@@ -68,12 +67,10 @@ export function RecoverySetupDialog() {
   };
 
   const handleSavedCode = () => {
-    // The API already saves the code upon generation
     setOpen(false);
     toast.success("Workspace security setup complete.");
   };
 
-  // Prevent closing the modal by clicking outside or pressing Escape
   const onInteractOutside = (e: Event) => {
     e.preventDefault();
   };

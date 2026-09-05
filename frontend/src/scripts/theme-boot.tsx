@@ -1,15 +1,6 @@
-﻿/**
- * Boot script that reads user preference values from cookies or localStorage
- * based on the configured persistence mode.
- *
- * Runs early in <head> to apply the correct data attributes before hydration,
- * preventing layout or theme flicker and keeping RootLayout fully static.
- */
-import { PREFERENCE_REGISTRY } from "@/lib/preferences/preferences-config";
-
+﻿import { PREFERENCE_REGISTRY } from "@/lib/preferences/preferences-config";
 export function ThemeBootScript() {
   const registry = JSON.stringify(PREFERENCE_REGISTRY);
-
   const code = `
     (function () {
       try {
@@ -73,6 +64,6 @@ export function ThemeBootScript() {
     })();
   `;
 
-  /* biome-ignore lint/security/noDangerouslySetInnerHtml: required for pre-hydration boot script */
+  
   return <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: code }} />;
 }

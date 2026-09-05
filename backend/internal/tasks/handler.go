@@ -83,7 +83,6 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	// Fetch existing
 	existing, err := h.service.GetTask(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Task not found"}})

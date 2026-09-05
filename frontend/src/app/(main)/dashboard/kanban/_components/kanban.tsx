@@ -107,14 +107,12 @@ export function Kanban({ initialBoard }: KanbanProps) {
     for (const key of Object.keys(newBoard) as ColumnId[]) {
       let columnTasks = [...newBoard[key]];
 
-      // Apply search
       if (query) {
         columnTasks = columnTasks.filter(
           (t) => t.title.toLowerCase().includes(query) || t.description.toLowerCase().includes(query),
         );
       }
 
-      // Apply filters
       if (priorityFilters.length > 0) {
         columnTasks = columnTasks.filter((t) => {
           return priorityFilters.includes(t.priority);

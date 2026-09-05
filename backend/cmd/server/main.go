@@ -33,32 +33,26 @@ func main() {
 		defer database.CloseDB()
 	}
 
-	// Task Module
 	taskRepo := tasks.NewRepository()
 	taskService := tasks.NewService(taskRepo)
 	taskHandler := tasks.NewHandler(taskService)
 
-	// Calendar Module
 	calendarRepo := calendar.NewRepository()
 	calendarService := calendar.NewService(calendarRepo)
 	calendarHandler := calendar.NewHandler(calendarService)
 
-	// Notes Module
 	notesRepo := notes.NewRepository()
 	notesService := notes.NewService(notesRepo)
 	notesHandler := notes.NewHandler(notesService)
 
-	// Files Module
 	filesRepo := files.NewRepository()
 	filesService := files.NewService(filesRepo)
 	filesHandler := files.NewHandler(filesService)
 
-	// Auth Module
 	authRepo := auth.NewRepository()
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 
-	// Assistant Module
 	assistantService, err := assistant.NewService(cfg, taskService, calendarService, notesService, filesService)
 	if err != nil {
 		log.Fatalf("Failed to initialize assistant service: %v", err)
@@ -67,7 +61,6 @@ func main() {
 
 	r := gin.New()
 
-	// Middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
@@ -76,7 +69,6 @@ func main() {
 		origins = append(origins, strings.TrimSpace(o))
 	}
 
-	// CORS Configuration
 	corsMiddleware := cors.New(cors.Config{
 		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -95,7 +87,6 @@ func main() {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Method Not Allowed"})
 	})
 
-	// Routes
 	r.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})

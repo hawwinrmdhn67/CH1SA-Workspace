@@ -180,7 +180,9 @@ export function KanbanTaskDetailModal({ task, open, onOpenChange, onUpdateTask }
                 </Badge>
               </h4>
               <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
-                {task.subtasks.map((st) => (
+                {[...task.subtasks]
+                  .sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1))
+                  .map((st) => (
                   <label
                     key={st.id}
                     className="flex items-center gap-3 bg-muted/20 p-2.5 rounded-md border border-border/40 hover:bg-muted/40 transition-colors cursor-pointer"

@@ -4,29 +4,24 @@ import (
 	"fmt"
 )
 
-// PolicyEvaluation represents the structural analysis and decision of a tool call
 type PolicyEvaluation struct {
 	Intent   Intent
 	Scope    Scope
 	Entity   Entity
 	Risk     Risk
 	Decision PolicyDecision
-	Message  string // Explanation for UI or logging
+	Message  string
 }
 
-// EvaluateAction acts as the deterministic Go policy engine protecting the workspace
 func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluation {
 	switch toolName {
-	// ---------------------------------------------------------
-	// TASKS
-	// ---------------------------------------------------------
 	case "create_task":
 		return PolicyEvaluation{
 			Intent:   "create_task",
 			Scope:    ScopeSingle,
 			Entity:   EntityTask,
 			Risk:     RiskLow,
-			Decision: PolicyAllow, // Non-destructive create can just execute in some architectures, but router.go validates it as true (needs confirmation). We will align with PolicyConfirm if it mutates.
+			Decision: PolicyAllow,
 		}
 	case "search_tasks", "get_task":
 		return PolicyEvaluation{
@@ -66,19 +61,16 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 			Scope:    ScopeMultiple,
 			Entity:   EntityTask,
 			Risk:     RiskVeryHigh,
-			Decision: PolicyConfirm, // We could make this PolicyCritical depending on size, but CONFIRM is okay for multiple
+			Decision: PolicyConfirm,
 		}
 
-	// ---------------------------------------------------------
-	// EVENTS
-	// ---------------------------------------------------------
 	case "create_event":
 		return PolicyEvaluation{
 			Intent:   "create_event",
 			Scope:    ScopeSingle,
 			Entity:   EntityCalendar,
 			Risk:     RiskLow,
-			Decision: PolicyConfirm, // Mutation
+			Decision: PolicyConfirm,
 		}
 	case "search_events", "get_event":
 		return PolicyEvaluation{
@@ -105,16 +97,13 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 			Decision: PolicyConfirm,
 		}
 
-	// ---------------------------------------------------------
-	// NOTES
-	// ---------------------------------------------------------
 	case "create_note":
 		return PolicyEvaluation{
 			Intent:   "create_note",
 			Scope:    ScopeSingle,
 			Entity:   EntityNote,
 			Risk:     RiskLow,
-			Decision: PolicyConfirm, // Mutation
+			Decision: PolicyConfirm,
 		}
 	case "search_notes", "get_note":
 		return PolicyEvaluation{
@@ -141,14 +130,11 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 			Decision: PolicyConfirm,
 		}
 
-	// ---------------------------------------------------------
-	// FILE MANAGER
-	// ---------------------------------------------------------
 	case "search_files", "search_folders":
 		return PolicyEvaluation{
 			Intent:   "read_files",
 			Scope:    ScopeCollection,
-			Entity:   EntityWorkspace, // mixed
+			Entity:   EntityWorkspace,
 			Risk:     RiskLow,
 			Decision: PolicyAllow,
 		}
@@ -189,15 +175,11 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 			Intent:   "delete_folder",
 			Scope:    ScopeSingle,
 			Entity:   EntityFolder,
-			Risk:     RiskVeryHigh, // deleting folder deletes children
+			Risk:     RiskVeryHigh,
 			Decision: PolicyConfirm,
 		}
 
-	// ---------------------------------------------------------
-	// WORKSPACE CRITICAL
-	// ---------------------------------------------------------
 	case "reset_workspace":
-		// Examine scope
 		scopes, ok := args["scope"].([]interface{})
 		if !ok || len(scopes) == 0 {
 			return PolicyEvaluation{

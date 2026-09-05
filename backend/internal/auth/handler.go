@@ -33,8 +33,6 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	// Add Partitioned attribute for CHIPS (Cookies Having Independent Partitioned State)
-	// This ensures the cross-origin session cookie is accepted by modern browsers even when 3P cookies are blocked.
 	cookieValue := session.ID.String()
 	maxAge := int(time.Until(session.ExpiresAt).Seconds())
 	
@@ -48,7 +46,6 @@ func (h *Handler) Login(c *gin.Context) {
 		SameSite: http.SameSiteNoneMode,
 	}
 	
-	// Add Partitioned manually because gin's SetCookie doesn't support it yet
 	c.Writer.Header().Add("Set-Cookie", cookie.String()+"; Partitioned")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully"})

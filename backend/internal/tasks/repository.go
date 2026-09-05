@@ -159,7 +159,7 @@ func (r *repository) List(ctx context.Context) ([]*models.Task, error) {
 		tasks = append(tasks, task)
 		taskIDs = append(taskIDs, task.ID)
 	}
-	rows.Close() // Explicitly close to free up connection for next query
+	rows.Close()
 
 	if len(tasks) > 0 {
 		stQuery := `SELECT id, task_id, title, is_completed, position, created_at, updated_at FROM subtasks ORDER BY task_id, position ASC`
@@ -215,7 +215,6 @@ func (r *repository) Update(ctx context.Context, task *models.Task) error {
 		return fmt.Errorf("failed to update task: %w", err)
 	}
 
-	// For simplicity, delete and recreate subtasks
 	delQuery := `DELETE FROM subtasks WHERE task_id = $1`
 	if _, err := tx.Exec(ctx, delQuery, task.ID); err != nil {
 		return fmt.Errorf("failed to clear subtasks: %w", err)

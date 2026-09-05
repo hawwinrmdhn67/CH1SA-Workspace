@@ -120,9 +120,11 @@ const DateCell = ({ row, table, field }: { row: any; table: any; field: "startDa
   );
 };
 
-const TitleCell = ({ row }: { row: any }) => {
+const TitleCell = ({ row, table }: { row: any; table: any }) => {
   const [showDetail, setShowDetail] = React.useState(false);
   const task = row.original as Task;
+  const meta = table.options.meta as any;
+  
   return (
     <>
       <div
@@ -133,7 +135,12 @@ const TitleCell = ({ row }: { row: any }) => {
       >
         <span className="max-w-lg truncate font-medium text-sm">{row.getValue("title")}</span>
       </div>
-      <KanbanTaskDetailModal task={task} open={showDetail} onOpenChange={setShowDetail} />
+      <KanbanTaskDetailModal
+        task={task}
+        open={showDetail}
+        onOpenChange={setShowDetail}
+        onUpdateTask={(updates) => meta?.updateTask?.(task.id, updates)}
+      />
     </>
   );
 };
@@ -227,14 +234,21 @@ export const columns: ColumnDef<DataTableFeatures, Task>[] = [
         <span>Task</span>
       </div>
     ),
-    cell: ({ row }) => <div className="w-20 font-mono text-muted-foreground text-sm">{row.getValue("id")}</div>,
+    cell: ({ row }) => {
+      const id = row.getValue("id") as string;
+      return (
+        <div className="w-20 font-mono text-muted-foreground text-sm truncate" title={id}>
+          {id.split("-")[0]}
+        </div>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: "title",
     header: ({ column }) => <TitleColumnHeader column={column} />,
-    cell: ({ row }) => <TitleCell row={row} />,
+    cell: ({ row, table }) => <TitleCell row={row} table={table} />,
   },
   {
     accessorKey: "state",

@@ -20,7 +20,7 @@ const normalizeStatus = (s: any) => {
   const lower = String(s).toLowerCase();
   if (lower.includes("progress")) return "in-progress";
   if (lower.includes("todo") || lower.includes("to do")) return "todo";
-  if (lower.includes("review")) return "in-progress"; // map review to in-progress since no review column
+  if (lower.includes("review")) return "in-progress"; 
   if (lower.includes("done") || lower.includes("complete")) return "done";
   if (lower.includes("cancel")) return "cancelled";
   return "backlog";
@@ -29,7 +29,6 @@ const normalizeStatus = (s: any) => {
 export const executeTool = async (type: ActionType, payload: any): Promise<ToolResult> => {
   try {
     switch (type) {
-      // --- TASKS ---
       case "create_task":
         addTaskGlobally({
           title: payload.title,
@@ -65,7 +64,6 @@ export const executeTool = async (type: ActionType, payload: any): Promise<ToolR
         return { success: true, message: JSON.stringify(compact) };
       }
 
-      // --- EVENTS ---
       case "create_event":
         await createEvent({
           title: payload.title,
@@ -98,7 +96,6 @@ export const executeTool = async (type: ActionType, payload: any): Promise<ToolR
         return { success: true, message: JSON.stringify(compact) };
       }
 
-      // --- NOTES ---
       case "create_note": {
         await createNote({
           title: payload.title || "Untitled Note",
@@ -130,7 +127,6 @@ export const executeTool = async (type: ActionType, payload: any): Promise<ToolR
         return { success: true, message: JSON.stringify(compact) };
       }
 
-      // --- FILE MANAGER ---
       case "create_folder": {
         const fm = useFileManager.getState();
         if (!fm.isInitialized) await fm.initialize();

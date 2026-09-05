@@ -21,12 +21,6 @@ import {
   tableFeatures,
 } from "@tanstack/react-table";
 
-/**
- * Central TanStack Table v9 feature registry for every dashboard data table.
- * V9 requires features and built-in functions to be registered explicitly; sharing this registry and its inferred type
- * keeps useTable instances, ColumnDef declarations, and reusable table helpers on the same feature contract. Explicit
- * registration also lets the bundler tree-shake features, row models, and filter/sort functions unused by the dashboard.
- */
 export const dataTableFeatures = tableFeatures({
   columnFacetingFeature,
   columnFilteringFeature,

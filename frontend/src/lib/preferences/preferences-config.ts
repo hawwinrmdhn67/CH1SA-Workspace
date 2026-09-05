@@ -1,18 +1,4 @@
-/**
- * How each preference should be saved.
- *
- * "client-cookie"  → write cookie on the browser only.
- * "server-cookie"  → write cookie through a Server Action.
- * "localStorage"   → save only on the client (non-layout stuff).
- * "none"           → no saving, resets on reload.
- *
- * Layout-critical prefs (sidebar_variant / sidebar_collapsible)
- * must stay consistent during SSR → so they can’t use localStorage.
- * Others are flexible and can use any persistence.
- */
-
 import { fontKeys } from "@/lib/fonts/registry";
-
 import {
   CONTENT_LAYOUT_VALUES,
   NAVBAR_STYLE_VALUES,
@@ -20,7 +6,6 @@ import {
   SIDEBAR_VARIANT_VALUES,
 } from "./layout";
 import { THEME_MODE_VALUES, THEME_PRESET_VALUES } from "./theme";
-
 export type PreferencePersistence = "none" | "client-cookie" | "server-cookie" | "localStorage";
 
 type LayoutPersistence = Exclude<PreferencePersistence, "localStorage">;

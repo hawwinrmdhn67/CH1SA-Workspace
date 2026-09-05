@@ -71,7 +71,6 @@ export function NotesList({ onSelectNote }: NotesListProps) {
             <div className="p-4 text-center text-sm text-muted-foreground">No notes found</div>
           ) : (
             filteredNotes.map((item) => {
-              // Strip HTML tags for preview text
               const plainTextContent = item.content.replace(/<[^>]*>?/gm, "");
 
               return (

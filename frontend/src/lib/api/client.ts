@@ -31,7 +31,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: "include", // Essential for sending/receiving secure cookies
+    credentials: "include", 
     cache: "no-store",
   };
 
@@ -48,7 +48,6 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     throw new ApiError(response.status, errorData?.error?.message || "An API error occurred", errorData);
   }
 
-  // Handle 204 No Content
   if (response.status === 204) {
     return null;
   }

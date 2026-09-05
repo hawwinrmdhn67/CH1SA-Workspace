@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Router handles validation and execution mapping for AI tool calls.
 type Router struct {
 	taskService     tasks.Service
 	calendarService calendar.Service
@@ -32,9 +31,8 @@ func NewRouter(taskService tasks.Service, calendarService calendar.Service, note
 	}
 }
 
-// RouteResult represents the structured outcome of a tool execution.
 type RouteResult struct {
-	Status  string                 `json:"status"` // "success" or "error"
+	Status  string                 `json:"status"`
 	Tool    string                 `json:"tool"`
 	Message string                 `json:"message"`
 	Data    map[string]interface{} `json:"data,omitempty"`
@@ -49,7 +47,7 @@ type RouteError struct {
 func (r *Router) resolveEntityID(ctx context.Context, args map[string]interface{}, entityType string, idKey string, titleKey string) error {
 	idStr, _ := args[idKey].(string)
 	if idStr != "" {
-		return nil // already have ID
+		return nil
 	}
 
 	titleStr, _ := args[titleKey].(string)
@@ -94,14 +92,13 @@ func (r *Router) resolveEntityID(ctx context.Context, args map[string]interface{
 	}
 
 	if err != nil {
-		return err // Pass disambiguation message back
+		return err
 	}
 
 	args[idKey] = id
 	return nil
 }
 
-// ValidateToolCall checks if the tool is supported and formats the preview text, while also evaluating policy.
 func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map[string]interface{}) (string, PolicyEvaluation, error) {
 	eval := EvaluateAction(toolName, args)
 
@@ -109,9 +106,8 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		return "", eval, fmt.Errorf("%s", eval.Message)
 	}
 
-	// Pre-resolve IDs if missing
 	switch toolName {
-	case "update_task", "delete_task":
+	case "get_task", "update_task", "delete_task":
 		if err := r.resolveEntityID(ctx, args, "task", "id", "title"); err != nil {
 			return "", eval, err
 		}
@@ -127,18 +123,17 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		if err := r.resolveEntityID(ctx, args, "note", "id", "title"); err != nil {
 			return "", eval, err
 		}
-	case "rename_file", "move_file", "star_file", "unstar_file", "delete_file":
+	case "update_file":
 		if err := r.resolveEntityID(ctx, args, "file", "id", "name"); err != nil {
 			return "", eval, err
 		}
-	case "rename_folder", "move_folder", "star_folder", "unstar_folder", "delete_folder":
+	case "update_folder":
 		if err := r.resolveEntityID(ctx, args, "folder", "id", "name"); err != nil {
 			return "", eval, err
 		}
 	}
 
 	switch toolName {
-	// TASKS
 	case "create_task":
 		title, _ := args["title"].(string)
 		if title == "" {
@@ -166,7 +161,7 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 	case "delete_task":
 		title := getString(args, "title")
 		if title == "" {
-			title = getString(args, "id") // fallback if resolved but no title initially
+			title = getString(args, "id")
 		}
 		return fmt.Sprintf("I will DELETE the task: %s", title), eval, nil
 
@@ -178,7 +173,6 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		taskIds, _ := args["taskIds"].([]interface{})
 		return fmt.Sprintf("I will DELETE %d tasks.", len(taskIds)), eval, nil
 
-	// EVENTS
 	case "create_event":
 		title, _ := args["title"].(string)
 		date, _ := args["date"].(string)
@@ -200,7 +194,6 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		}
 		return fmt.Sprintf("I will DELETE the event: %s", title), eval, nil
 
-	// NOTES
 	case "create_note":
 		title, _ := args["title"].(string)
 		if title == "" {
@@ -221,7 +214,6 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		}
 		return fmt.Sprintf("I will DELETE the note: %s", title), eval, nil
 
-	// FILE MANAGER
 	case "search_files", "search_folders":
 		return "Searching files...", eval, nil
 
@@ -232,7 +224,7 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		}
 		return fmt.Sprintf("I'll create a folder: %s", name), eval, nil
 
-	case "rename_file", "rename_folder", "move_file", "move_folder", "star_file", "unstar_file", "star_folder", "unstar_folder":
+	case "update_file", "update_folder":
 		return fmt.Sprintf("I'll %s.", toolName), eval, nil
 
 	case "delete_file", "delete_folder":
@@ -270,7 +262,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 	var executeErr error
 
 	switch toolName {
-	// TASKS
 	case "create_task":
 		var subtasks []models.Subtask
 		if stList, ok := args["subtasks"].([]interface{}); ok {
@@ -463,17 +454,17 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			}
 		}
 
-	case "search_tasks", "get_task":
+	case "search_tasks":
 		tasksList, err := r.taskService.ListTasks(ctx)
 		if err == nil {
 			compact := make([]map[string]interface{}, 0)
 			for i, t := range tasksList {
-				if i >= 10 {
+				if i >= 7 {
 					break
 				}
 				compact = append(compact, map[string]interface{}{
 					"id": t.ID, "title": t.Title, "priority": t.Priority, "status": t.Status,
-					"startDate": t.StartDate, "dueDate": t.DueDate, "subtasks": t.Subtasks,
+					"startDate": t.StartDate, "dueDate": t.DueDate,
 				})
 			}
 			args["results"] = compact
@@ -481,7 +472,19 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			executeErr = err
 		}
 
-	// EVENTS
+	case "get_task":
+		taskID := parseUUID(getString(args, "id"))
+		if taskID == uuid.Nil {
+			executeErr = fmt.Errorf("invalid or missing task id")
+			break
+		}
+		task, err := r.taskService.GetTask(ctx, taskID)
+		if err == nil {
+			args["task"] = task
+		} else {
+			executeErr = err
+		}
+
 	case "create_event":
 		allDay := false
 		if v, ok := args["allDay"].(bool); ok {
@@ -503,7 +506,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		if err == nil {
 			compact := make([]map[string]interface{}, 0)
 			for i, e := range eventsList {
-				if i >= 10 {
+				if i >= 5 {
 					break
 				}
 				compact = append(compact, map[string]interface{}{
@@ -515,7 +518,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			executeErr = err
 		}
 
-	// NOTES
 	case "create_note":
 		executeErr = r.notesService.CreateNote(ctx, &models.Note{
 			Title:   getString(args, "title"),
@@ -544,7 +546,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			executeErr = err
 		}
 
-	// FILE MANAGER
 	case "create_folder":
 		parentIDStr := getString(args, "parentId")
 		var parentID *uuid.UUID
@@ -558,65 +559,72 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			Name:     getString(args, "name"),
 			ParentID: parentID,
 		})
-	case "rename_folder":
-		executeErr = r.filesService.UpdateFolder(ctx, &models.Folder{
-			ID:   parseUUID(getString(args, "id")),
-			Name: getString(args, "newName"),
-		})
-	case "delete_folder":
-		executeErr = r.filesService.DeleteFolder(ctx, parseUUID(getString(args, "id")))
-	case "star_folder":
-		executeErr = r.filesService.UpdateFolder(ctx, &models.Folder{
-			ID:        parseUUID(getString(args, "id")),
-			IsStarred: true,
-		})
-	case "unstar_folder":
-		executeErr = r.filesService.UpdateFolder(ctx, &models.Folder{
-			ID:        parseUUID(getString(args, "id")),
-			IsStarred: false,
-		})
-	case "rename_file":
-		executeErr = r.filesService.UpdateFile(ctx, &models.File{
-			ID:   parseUUID(getString(args, "id")),
-			Name: getString(args, "newName"),
-		})
-	case "delete_file":
-		executeErr = r.filesService.DeleteFile(ctx, parseUUID(getString(args, "id")))
-	case "star_file":
-		executeErr = r.filesService.UpdateFile(ctx, &models.File{
-			ID:        parseUUID(getString(args, "id")),
-			IsStarred: true,
-		})
-	case "unstar_file":
-		executeErr = r.filesService.UpdateFile(ctx, &models.File{
-			ID:        parseUUID(getString(args, "id")),
-			IsStarred: false,
-		})
-	case "move_file":
-		folderIDStr := getString(args, "folderId")
-		var folderID *uuid.UUID
-		if folderIDStr != "" && folderIDStr != "null" {
-			fid := parseUUID(folderIDStr)
-			if fid != uuid.Nil {
-				folderID = &fid
+	case "update_folder":
+		folderID := parseUUID(getString(args, "id"))
+		existingFolder, err := r.filesService.GetFolder(ctx, folderID)
+		if err != nil {
+			executeErr = fmt.Errorf("folder not found: %w", err)
+			break
+		}
+		if val, ok := args["newName"].(string); ok && val != "" {
+			existingFolder.Name = val
+		}
+		if val, ok := args["isStarred"].(bool); ok {
+			existingFolder.IsStarred = val
+		}
+		if folderIDStr := getString(args, "folderId"); folderIDStr != "" {
+			if folderIDStr == "null" {
+				existingFolder.ParentID = nil
+			} else {
+				pid := parseUUID(folderIDStr)
+				if pid != uuid.Nil {
+					existingFolder.ParentID = &pid
+				}
 			}
 		}
-		executeErr = r.filesService.UpdateFile(ctx, &models.File{
-			ID:       parseUUID(getString(args, "id")),
-			FolderID: folderID,
-		})
+		executeErr = r.filesService.UpdateFolder(ctx, existingFolder)
+		
+	case "delete_folder":
+		executeErr = r.filesService.DeleteFolder(ctx, parseUUID(getString(args, "id")))
+		
+	case "update_file":
+		fileID := parseUUID(getString(args, "id"))
+		existingFile, err := r.filesService.GetFile(ctx, fileID)
+		if err != nil {
+			executeErr = fmt.Errorf("file not found: %w", err)
+			break
+		}
+		if val, ok := args["newName"].(string); ok && val != "" {
+			existingFile.Name = val
+		}
+		if val, ok := args["isStarred"].(bool); ok {
+			existingFile.IsStarred = val
+		}
+		if folderIDStr := getString(args, "folderId"); folderIDStr != "" {
+			if folderIDStr == "null" {
+				existingFile.FolderID = nil
+			} else {
+				pid := parseUUID(folderIDStr)
+				if pid != uuid.Nil {
+					existingFile.FolderID = &pid
+				}
+			}
+		}
+		executeErr = r.filesService.UpdateFile(ctx, existingFile)
+		
+	case "delete_file":
+		executeErr = r.filesService.DeleteFile(ctx, parseUUID(getString(args, "id")))
 	case "search_files", "search_folders":
-		// Handle both in one request to keep it simple for the LLM
 		filesList, err1 := r.filesService.ListFiles(ctx)
 		foldersList, err2 := r.filesService.ListFolders(ctx)
 		if err1 == nil && err2 == nil {
 			compactFiles := make([]map[string]interface{}, 0)
 			for i, f := range filesList {
-				if i >= 10 {
+				if i >= 5 {
 					break
 				}
 				compactFiles = append(compactFiles, map[string]interface{}{
-					"id": f.ID, "name": f.Name, "kind": f.Kind, "size": f.Size,
+					"id": f.ID, "name": f.Name, "kind": f.Kind,
 				})
 			}
 			compactFolders := make([]map[string]interface{}, 0)
@@ -674,8 +682,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		}
 
 	default:
-		// Read-only or un-migrated operations
-		// Return success and let frontend handle it for now
 	}
 
 	if executeErr != nil {
@@ -694,7 +700,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 	}
 }
 
-// StoredAction represents an action waiting for user confirmation
 type StoredAction struct {
 	ConfirmationID string
 	ToolName       string

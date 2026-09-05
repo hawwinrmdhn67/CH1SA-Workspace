@@ -115,7 +115,7 @@ export function ActionModals() {
 
   return (
     <>
-      {/* Rename Modal */}
+      {}
       <Dialog open={type === "rename"} onOpenChange={(open) => !open && close()}>
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleRename}>
@@ -140,7 +140,7 @@ export function ActionModals() {
         </DialogContent>
       </Dialog>
 
-      {/* Move Modal */}
+      {}
       <Dialog open={type === "move"} onOpenChange={(open) => !open && close()}>
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleMove}>
@@ -173,7 +173,7 @@ export function ActionModals() {
         </DialogContent>
       </Dialog>
 
-      {/* Preview Modal */}
+      {}
       <Dialog open={type === "preview"} onOpenChange={(open) => !open && close()}>
         <DialogContent className="flex max-h-[90vh] w-full max-w-4xl flex-col">
           <DialogHeader className="min-w-0 shrink-0 pr-8">
@@ -198,7 +198,7 @@ export function ActionModals() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {}
       <AlertDialog open={type === "delete"} onOpenChange={(open) => !open && close()}>
         <AlertDialogContent>
           <AlertDialogHeader>

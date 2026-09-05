@@ -35,7 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       suppressHydrationWarning
     >
       <head>
-        {/* Applies theme and layout preferences on load to avoid flicker and unnecessary server rerenders. */}
+        {}
         <ThemeBootScript />
       </head>
       <body className={`${fontVars} min-h-screen antialiased`}>
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             </PreferencesStoreProvider>
           </AuthProvider>
         </TooltipProvider>
-        {/* Used for this project's hosted demo. Feel free to remove it; it is not required for template functionality. */}
+        {}
         <Analytics />
       </body>
     </html>

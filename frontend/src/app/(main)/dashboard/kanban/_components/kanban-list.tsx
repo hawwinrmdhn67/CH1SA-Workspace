@@ -98,7 +98,6 @@ function ListColumn({
 }
 
 export function KanbanList({ data, onAddTask, onDeleteTask, onDuplicateTask, onUpdateTask }: KanbanListProps) {
-  // Group tasks by state
   const tasksByState = React.useMemo(() => {
     const grouped: Record<ColumnId, Task[]> = {
       backlog: [],

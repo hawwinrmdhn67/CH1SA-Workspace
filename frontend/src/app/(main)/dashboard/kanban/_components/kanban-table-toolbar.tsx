@@ -30,7 +30,7 @@ export function TasksToolbar<TData extends RowData>({ table }: TasksToolbarProps
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        {/* Local search removed in favor of global search */}
+        {}
       </div>
       <div className="flex justify-end">
         <DropdownMenu>

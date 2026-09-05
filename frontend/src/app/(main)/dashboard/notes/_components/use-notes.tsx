@@ -37,7 +37,6 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       }));
       setNotes(formattedNotes);
 
-      // Select first note if nothing is selected and we have notes
       setNoteState((prev) => {
         if (!prev.selected && formattedNotes.length > 0) {
           return { selected: formattedNotes[0].id };

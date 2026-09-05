@@ -50,8 +50,6 @@ export function getDB(): Promise<IDBDatabase> {
   });
 }
 
-// Removed folder DB methods as they are now handled by Go REST API
-
 export async function getAllFiles(): Promise<DBFile[]> {
   const db = await getDB();
   return new Promise((resolve, reject) => {

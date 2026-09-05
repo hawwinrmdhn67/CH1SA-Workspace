@@ -12,7 +12,6 @@ import {
   updateTask as updateTaskApi,
 } from "@/lib/api/tasks";
 
-// Adapter: API (YYYY-MM-DD or ISO) -> Kanban UI ("MMM d")
 const apiDateToKanbanDate = (dateStr?: string | null) => {
   if (!dateStr) return "";
   try {
@@ -24,7 +23,6 @@ const apiDateToKanbanDate = (dateStr?: string | null) => {
   }
 };
 
-// Adapter: Kanban UI ("MMM d") -> API ("YYYY-MM-DD")
 const kanbanDateToApiDate = (dateStr?: string) => {
   if (!dateStr || dateStr.trim() === "") return undefined;
   try {
@@ -71,7 +69,7 @@ export function useKanbanTasks() {
           description: t.description,
           state: t.status as ColumnId,
           priority: t.priority as any,
-          team: "Product", // Default fallback
+          team: "Product", 
           startDate: apiDateToKanbanDate(t.startDate),
           dueDate: apiDateToKanbanDate(t.dueDate),
           subtasks: t.subtasks?.map((st) => ({
@@ -127,10 +125,8 @@ export function useKanbanTasks() {
         return newBoard;
       });
 
-      // Background API call
       updateTaskApi(taskId, { status: newStateId }).catch((e) => {
         console.error("Failed to update task state", e);
-        // Ideally rollback UI here
         refreshData();
       });
     },

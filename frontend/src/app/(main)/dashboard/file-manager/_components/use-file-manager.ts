@@ -6,7 +6,7 @@ import {
   type DBFile,
   type DBFolder,
   deleteFileDB,
-  getAllFiles, // only for syncing blobs
+  getAllFiles, 
   saveFile,
 } from "./file-manager-db";
 
@@ -39,7 +39,6 @@ export interface FileManagerState {
   view: "grid" | "list";
   modalState: ActionModalState;
 
-  // Actions
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
   setCurrentFolder: (id: string | null) => void;
@@ -181,7 +180,6 @@ export const useFileManager = create<FileManagerState>((set, get) => ({
       };
       const deletedFolderIds = getDescendantFolderIds(id);
 
-      // We still need to delete local blobs from IndexedDB for ALL affected files
       const filesToDelete = state.files.filter((f) => f.folderId && deletedFolderIds.includes(f.folderId));
       for (const file of filesToDelete) {
         await deleteFileDB(file.id);
@@ -191,10 +189,8 @@ export const useFileManager = create<FileManagerState>((set, get) => ({
         const remainingFolders = state.folders.filter((f) => !deletedFolderIds.includes(f.id));
         const remainingFiles = state.files.filter((f) => !f.folderId || !deletedFolderIds.includes(f.folderId));
 
-        // Determine the nearest valid parent if we are inside the deleted tree
         let newCurrentFolderId = state.currentFolderId;
         if (newCurrentFolderId && deletedFolderIds.includes(newCurrentFolderId)) {
-          // If we were viewing a folder that just got deleted, move to the parent of the root deleted folder
           const rootDeletedFolder = state.folders.find((f) => f.id === id);
           newCurrentFolderId = rootDeletedFolder ? rootDeletedFolder.parentId : null;
         }
@@ -239,7 +235,7 @@ export const useFileManager = create<FileManagerState>((set, get) => ({
         starred: apiFile.isStarred,
         createdAt: new Date(apiFile.createdAt).getTime(),
         modifiedAt: new Date(apiFile.updatedAt).getTime(),
-        blob: file, // Save Blob instance to IndexedDB
+        blob: file, 
       };
 
       await saveFile(newFile);

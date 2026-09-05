@@ -17,7 +17,6 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
-// Folders
 func (h *Handler) CreateFolder(c *gin.Context) {
 	var folder models.Folder
 	if err := c.ShouldBindJSON(&folder); err != nil {
@@ -91,7 +90,6 @@ func (h *Handler) DeleteFolder(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Files
 func (h *Handler) CreateFile(c *gin.Context) {
 	var file models.File
 	if err := c.ShouldBindJSON(&file); err != nil {

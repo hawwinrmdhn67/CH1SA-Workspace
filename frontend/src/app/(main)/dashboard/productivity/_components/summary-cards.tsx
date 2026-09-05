@@ -25,7 +25,16 @@ export function SummaryCards() {
   const activeTasks = tasks.filter((t) => t.state !== "done" && t.state !== "backlog");
   const averageProgress =
     activeTasks.length > 0
-      ? Math.round(activeTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / activeTasks.length)
+      ? Math.round(
+          activeTasks.reduce((acc, t) => {
+            let taskProgress = t.progress || 0;
+            if (t.subtasks && t.subtasks.length > 0) {
+              const completed = t.subtasks.filter((s) => s.completed).length;
+              taskProgress = (completed / t.subtasks.length) * 100;
+            }
+            return acc + taskProgress;
+          }, 0) / activeTasks.length,
+        )
       : 0;
 
   const focusTasks = tasks.filter(

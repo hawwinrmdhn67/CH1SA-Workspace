@@ -9,25 +9,21 @@ export interface AssistantMessage {
 }
 
 export type ActionType =
-  // Tasks
   | "create_task"
   | "update_task"
   | "delete_task"
   | "search_tasks"
   | "get_task"
-  // Calendar
   | "create_event"
   | "update_event"
   | "delete_event"
   | "search_events"
   | "get_event"
-  // Notes
   | "create_note"
   | "update_note"
   | "delete_note"
   | "search_notes"
   | "get_note"
-  // File Manager
   | "create_folder"
   | "delete_folder"
   | "move_file"
@@ -41,9 +37,7 @@ export type ActionType =
   | "unstar_folder"
   | "search_files"
   | "search_folders"
-  // Ambiguous/Search
   | "clarify"
-  // Workspace Critical
   | "reset_workspace"
   | "bulk_update_tasks"
   | "bulk_delete_tasks";

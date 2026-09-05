@@ -8,7 +8,6 @@ import (
 func TestGenerateRecoveryCode_Format(t *testing.T) {
 	code := generateRecoveryCode()
 
-	// Check length: 16 chars + 3 hyphens = 19
 	if len(code) != 19 {
 		t.Errorf("Expected length 19, got %d for code %s", len(code), code)
 	}
@@ -34,14 +33,12 @@ func TestGenerateRecoveryCode_Format(t *testing.T) {
 }
 
 func TestGenerateRecoveryCode_Uniqueness(t *testing.T) {
-	// Generate 1000 Recovery Codes and verify no duplicates
 	generated := make(map[string]bool)
 	const count = 1000
 
 	for i := 0; i < count; i++ {
 		code := generateRecoveryCode()
 		
-		// Check for repeating sequences like SSSS-SSSS-SSSS-SSSS
 		if code == "SSSS-SSSS-SSSS-SSSS" {
 			t.Errorf("Generated the known bad static placeholder")
 		}

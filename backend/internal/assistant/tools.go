@@ -5,10 +5,8 @@ import (
 	"github.com/sashabaranov/go-openai/jsonschema"
 )
 
-// GetToolDefinitions returns the canonical schema for all available CHISA tools
 func GetToolDefinitions() []openai.Tool {
 	return []openai.Tool{
-		// TASKS
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
@@ -55,13 +53,13 @@ func GetToolDefinitions() []openai.Tool {
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
 				Name:        "get_task",
-				Description: "Get task details.",
+				Description: "Get task details including subtasks.",
 				Parameters: jsonschema.Definition{
 					Type: jsonschema.Object,
 					Properties: map[string]jsonschema.Definition{
-						"id": {Type: jsonschema.String},
+						"id":    {Type: jsonschema.String, Description: "Optional if title uniquely identifies the task"},
+						"title": {Type: jsonschema.String, Description: "Provide to identify the task if ID is unknown"},
 					},
-					Required: []string{"id"},
 				},
 			},
 		},
@@ -190,7 +188,6 @@ func GetToolDefinitions() []openai.Tool {
 			},
 		},
 
-		// EVENTS
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
@@ -272,7 +269,6 @@ func GetToolDefinitions() []openai.Tool {
 			},
 		},
 
-		// NOTES
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
@@ -346,7 +342,6 @@ func GetToolDefinitions() []openai.Tool {
 			},
 		},
 
-		// FILE MANAGER
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
@@ -391,77 +386,16 @@ func GetToolDefinitions() []openai.Tool {
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
-				Name:        "rename_file",
-				Description: "Rename file.",
+				Name:        "update_file",
+				Description: "Rename, move, or star/unstar a file.",
 				Parameters: jsonschema.Definition{
 					Type: jsonschema.Object,
 					Properties: map[string]jsonschema.Definition{
-						"id":      {Type: jsonschema.String},
-						"name":    {Type: jsonschema.String, Description: "Current name of the file"},
-						"newName": {Type: jsonschema.String},
-					},
-					Required: []string{"newName"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "rename_folder",
-				Description: "Rename folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":      {Type: jsonschema.String},
-						"name":    {Type: jsonschema.String, Description: "Current name of the folder"},
-						"newName": {Type: jsonschema.String},
-					},
-					Required: []string{"newName"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "move_file",
-				Description: "Move file.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":       {Type: jsonschema.String},
-						"name":     {Type: jsonschema.String},
-						"folderId": {Type: jsonschema.String},
-					},
-					Required: []string{"folderId"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "move_folder",
-				Description: "Move folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":       {Type: jsonschema.String},
-						"name":     {Type: jsonschema.String},
-						"folderId": {Type: jsonschema.String},
-					},
-					Required: []string{"folderId"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "star_file",
-				Description: "Star file.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
+						"id":        {Type: jsonschema.String},
+						"name":      {Type: jsonschema.String, Description: "Provide to identify the file if ID is unknown"},
+						"newName":   {Type: jsonschema.String},
+						"folderId":  {Type: jsonschema.String, Description: "Parent folder ID to move into"},
+						"isStarred": {Type: jsonschema.Boolean},
 					},
 				},
 			},
@@ -469,45 +403,21 @@ func GetToolDefinitions() []openai.Tool {
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
-				Name:        "unstar_file",
-				Description: "Unstar file.",
+				Name:        "update_folder",
+				Description: "Rename, move, or star/unstar a folder.",
 				Parameters: jsonschema.Definition{
 					Type: jsonschema.Object,
 					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
+						"id":        {Type: jsonschema.String},
+						"name":      {Type: jsonschema.String, Description: "Provide to identify the folder if ID is unknown"},
+						"newName":   {Type: jsonschema.String},
+						"folderId":  {Type: jsonschema.String, Description: "Parent folder ID to move into"},
+						"isStarred": {Type: jsonschema.Boolean},
 					},
 				},
 			},
 		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "star_folder",
-				Description: "Star folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
-					},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "unstar_folder",
-				Description: "Unstar folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
-					},
-				},
-			},
-		},
+
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
@@ -539,7 +449,6 @@ func GetToolDefinitions() []openai.Tool {
 			},
 		},
 
-		// WORKSPACE CRITICAL
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{

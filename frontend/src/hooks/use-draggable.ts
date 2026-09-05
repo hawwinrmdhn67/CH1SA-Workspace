@@ -5,15 +5,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 interface UseDraggableProps {
   initialPosition?: { x: number; y: number };
   onClick?: () => void;
-  clickThreshold?: number; // Distance in pixels to distinguish click from drag
-  itemSize?: number; // The size (width/height) of the dragged item to compute viewport bounds
+  clickThreshold?: number; 
+  itemSize?: number; 
 }
 
 export function useDraggable({
   initialPosition,
   onClick,
   clickThreshold = 5,
-  itemSize = 64, // Assume 64px roughly for an avatar button
+  itemSize = 64, 
 }: UseDraggableProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -27,14 +27,12 @@ export function useDraggable({
     hasMovedThreshold: false,
   });
 
-  // Calculate default position (bottom-right) or use saved initial
   useEffect(() => {
     if (typeof window !== "undefined" && !isInitialized) {
       const savedPos = localStorage.getItem("chisa_assistant_pos");
       if (savedPos) {
         try {
           const parsed = JSON.parse(savedPos);
-          // Clamp immediately upon restoring
           const clampedX = Math.max(0, Math.min(parsed.x, window.innerWidth - itemSize));
           const clampedY = Math.max(0, Math.min(parsed.y, window.innerHeight - itemSize));
           setPosition({ x: clampedX, y: clampedY });
@@ -50,7 +48,6 @@ export function useDraggable({
     }
   }, [initialPosition, itemSize, isInitialized]);
 
-  // Handle window resize to clamp position inside bounds
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -67,7 +64,6 @@ export function useDraggable({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // Only left clicks/touches
       if (e.button !== 0 && e.pointerType === "mouse") return;
 
       e.preventDefault();
@@ -96,7 +92,6 @@ export function useDraggable({
         dragRef.current.hasMovedThreshold = true;
       }
 
-      // Clamp coordinates to viewport
       const newX = Math.max(0, Math.min(dragRef.current.initialPosX + dx, window.innerWidth - itemSize));
       const newY = Math.max(0, Math.min(dragRef.current.initialPosY + dy, window.innerHeight - itemSize));
 
@@ -114,7 +109,6 @@ export function useDraggable({
       if (!dragRef.current.hasMovedThreshold && onClick) {
         onClick();
       } else if (dragRef.current.hasMovedThreshold) {
-        // Save position if it was a drag
         localStorage.setItem("chisa_assistant_pos", JSON.stringify(position));
       }
     },

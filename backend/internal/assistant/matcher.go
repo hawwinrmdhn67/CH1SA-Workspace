@@ -84,7 +84,6 @@ func normalizeString(s string) string {
 	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
 }
 
-// Entity Wrappers
 
 type noteMatcher struct{ *models.Note }
 func (m noteMatcher) GetID() string       { return m.ID.String() }

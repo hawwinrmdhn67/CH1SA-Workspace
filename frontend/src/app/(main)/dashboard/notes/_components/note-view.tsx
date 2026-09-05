@@ -35,7 +35,6 @@ export function NoteView({ note, onClose }: NoteViewProps) {
   const editorRef = React.useRef<HTMLDivElement>(null);
   const currentLoadedNoteId = React.useRef<string | null>(null);
 
-  // Sync state when selected note changes
   React.useEffect(() => {
     if (note && note.id !== currentLoadedNoteId.current) {
       setLocalTitle(note.title);
@@ -43,18 +42,15 @@ export function NoteView({ note, onClose }: NoteViewProps) {
       setSaveStatus("Saved");
       currentLoadedNoteId.current = note.id;
 
-      // Update DOM
       if (editorRef.current) {
         editorRef.current.innerHTML = note.content;
       }
     }
   }, [note?.id]);
 
-  // Autosave Debounce
   React.useEffect(() => {
     if (!note) return;
 
-    // Only save if there are changes
     if (localTitle === note.title && localContent === note.content) {
       return;
     }
@@ -76,7 +72,6 @@ export function NoteView({ note, onClose }: NoteViewProps) {
     return () => clearTimeout(timeoutId);
   }, [localTitle, localContent, note, updateNote]);
 
-  // Ctrl+S Force Save
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -119,7 +114,6 @@ export function NoteView({ note, onClose }: NoteViewProps) {
   };
 
   const execCommand = (command: string, value?: string) => {
-    // Pastikan editor fokus sebelum command dijalankan (mengatasi masalah klik pertama)
     if (document.activeElement !== editorRef.current) {
       editorRef.current?.focus();
     }
@@ -177,10 +171,10 @@ export function NoteView({ note, onClose }: NoteViewProps) {
         </Button>
       </div>
 
-      {/* Visual WYSIWYG Toolbar */}
+      {}
       <div
         className="flex items-center gap-1 px-4 py-2 border-y bg-muted/20 overflow-x-auto"
-        onMouseDown={(e) => e.preventDefault()} // Mencegah tombol toolbar mencuri fokus dari editor
+        onMouseDown={(e) => e.preventDefault()} 
       >
         <Button
           variant={activeFormats.bold ? "default" : "ghost"}
