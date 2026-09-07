@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,20 +15,7 @@ interface FileGridViewProps {
 }
 
 export function FileGridView({ files }: FileGridViewProps) {
-  const { toggleStarFile, setModalState, files: allFiles } = useFileManager();
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-
-  const getImageUrl = (file: FileManagerFile) => {
-    if (file.kind !== "image" || imageUrls[file.id]) return imageUrls[file.id];
-    
-    const fullFile = allFiles.find((f) => f.id === file.id);
-    if (fullFile?.blob) {
-      const url = URL.createObjectURL(fullFile.blob as Blob);
-      setImageUrls((prev) => ({ ...prev, [file.id]: url }));
-      return url;
-    }
-    return null;
-  };
+  const { toggleStarFile, setModalState } = useFileManager();
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -46,15 +31,7 @@ export function FileGridView({ files }: FileGridViewProps) {
           >
             <CardContent>
               <div className="relative flex h-36 items-center justify-center rounded-lg bg-muted/50 overflow-hidden">
-                {file.kind === "image" && getImageUrl(file) ? (
-                  <img
-                    src={getImageUrl(file) || ""}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FileIcon className="size-12 text-muted-foreground" aria-hidden="true" />
-                )}
+                <FileIcon className="size-12 text-muted-foreground" aria-hidden="true" />
                 <Button
                   variant="ghost"
                   size="icon-sm"
