@@ -34,10 +34,10 @@ export function FoldersSection({ folders, view }: FoldersSectionProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-0">Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Items</TableHead>
-              <TableHead className="hidden lg:table-cell">Modified</TableHead>
-              <TableHead className="hidden md:table-cell">Size</TableHead>
+              <TableHead className="pl-0 w-[50%] lg:w-[40%]">Name</TableHead>
+              <TableHead className="hidden sm:table-cell w-[20%] lg:w-[15%]">Type</TableHead>
+              <TableHead className="hidden lg:table-cell w-[20%] lg:w-[15%]">Modified</TableHead>
+              <TableHead className="hidden md:table-cell w-[20%] lg:w-[15%]">Size</TableHead>
               <TableHead className="w-16">
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -56,7 +56,7 @@ export function FoldersSection({ folders, view }: FoldersSectionProps) {
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground sm:table-cell">{folder.fileCount} files</TableCell>
+                <TableCell className="hidden text-muted-foreground sm:table-cell">File Folder</TableCell>
                 <TableCell className="hidden text-muted-foreground lg:table-cell">{folder.updatedAt}</TableCell>
                 <TableCell className="hidden text-muted-foreground md:table-cell">{folder.size}</TableCell>
                 <TableCell>

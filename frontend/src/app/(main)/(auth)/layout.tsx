@@ -19,7 +19,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
               <img
                 src="/logo_hitam.png"
                 alt="Logo"
-                className="size-14 shrink-0 scale-150 object-contain hidden dark:block"
+                className="size-14 shrink-0 object-contain hidden dark:block"
               />
             </div>
             <div className="space-y-1">

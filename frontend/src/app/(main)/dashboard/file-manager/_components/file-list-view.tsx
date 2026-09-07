@@ -4,13 +4,12 @@ import { useState } from "react";
 
 import { Star } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-import { type FileManagerFile, fileIcons } from "./data";
+import { type FileManagerFile, fileIcons, fileKindLabels } from "./data";
 import { FileActions } from "./file-actions";
 import { useFileManager } from "./use-file-manager";
 
@@ -25,11 +24,11 @@ export function FileListView({ files }: FileListViewProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="pl-0">Name</TableHead>
-          <TableHead className="hidden md:table-cell">Owner</TableHead>
-          <TableHead className="hidden lg:table-cell">Modified</TableHead>
-          <TableHead className="hidden sm:table-cell">Size</TableHead>
-          <TableHead className="w-20">
+          <TableHead className="pl-0 w-[50%] lg:w-[40%]">Name</TableHead>
+          <TableHead className="hidden sm:table-cell w-[20%] lg:w-[15%]">Type</TableHead>
+          <TableHead className="hidden lg:table-cell w-[20%] lg:w-[15%]">Modified</TableHead>
+          <TableHead className="hidden md:table-cell w-[20%] lg:w-[15%]">Size</TableHead>
+          <TableHead className="w-16">
             <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>
@@ -57,16 +56,9 @@ export function FileListView({ files }: FileListViewProps) {
                   )}
                 </div>
               </TableCell>
-              <TableCell className="hidden md:table-cell">
-                <div className="flex items-center gap-2">
-                  <Avatar size="sm">
-                    <AvatarFallback>{file.ownerInitials}</AvatarFallback>
-                  </Avatar>
-                  <span>{file.owner}</span>
-                </div>
-              </TableCell>
+              <TableCell className="hidden text-muted-foreground sm:table-cell">{fileKindLabels[file.kind] || "File"}</TableCell>
               <TableCell className="hidden text-muted-foreground lg:table-cell">{file.modifiedAt}</TableCell>
-              <TableCell className="hidden text-muted-foreground sm:table-cell">{file.size}</TableCell>
+              <TableCell className="hidden text-muted-foreground md:table-cell">{file.size}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-end">
                   <Button

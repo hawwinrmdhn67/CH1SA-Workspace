@@ -17,7 +17,20 @@ interface FileGridViewProps {
 }
 
 export function FileGridView({ files }: FileGridViewProps) {
-  const { toggleStarFile, setModalState } = useFileManager();
+  const { toggleStarFile, setModalState, files: allFiles } = useFileManager();
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  const getImageUrl = (file: FileManagerFile) => {
+    if (file.kind !== "image" || imageUrls[file.id]) return imageUrls[file.id];
+    
+    const fullFile = allFiles.find((f) => f.id === file.id);
+    if (fullFile?.blob) {
+      const url = URL.createObjectURL(fullFile.blob as Blob);
+      setImageUrls((prev) => ({ ...prev, [file.id]: url }));
+      return url;
+    }
+    return null;
+  };
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -32,10 +45,18 @@ export function FileGridView({ files }: FileGridViewProps) {
             onClick={() => setModalState({ type: "preview", itemType: "file", itemId: file.id })}
           >
             <CardContent>
-              <div className="relative flex h-36 items-center justify-center rounded-lg bg-muted/50">
-                <FileIcon className="size-12 text-muted-foreground" aria-hidden="true" />
+              <div className="relative flex h-36 items-center justify-center rounded-lg bg-muted/50 overflow-hidden">
+                {file.kind === "image" && getImageUrl(file) ? (
+                  <img
+                    src={getImageUrl(file) || ""}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FileIcon className="size-12 text-muted-foreground" aria-hidden="true" />
+                )}
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="icon-sm"
                   className={cn(
                     "absolute top-2 right-2 opacity-0 focus-visible:opacity-100 group-hover/file:opacity-100",
@@ -47,7 +68,7 @@ export function FileGridView({ files }: FileGridViewProps) {
                     toggleStarFile(file.id);
                   }}
                 >
-                  <Star className={cn(file.starred && "fill-current")} />
+                  <Star className={cn("size-4", file.starred && "fill-foreground")} />
                 </Button>
                 <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 text-muted-foreground text-xs">
                   <span>{fileKindLabels[file.kind] || "File"}</span>
@@ -57,9 +78,6 @@ export function FileGridView({ files }: FileGridViewProps) {
             </CardContent>
             <CardHeader>
               <CardTitle className="truncate">{file.name}</CardTitle>
-              <CardDescription className="truncate">
-                Modified {file.modifiedAt} by {file.owner}
-              </CardDescription>
               <CardAction>
                 <FileActions file={file} />
               </CardAction>

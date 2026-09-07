@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Download } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 
 import {
   AlertDialog,
@@ -75,6 +75,16 @@ export function ActionModals() {
     const dest = targetFolderId === "root" ? null : targetFolderId;
     if (itemType === "file") await moveFile(itemId, dest);
     close();
+  };
+
+  const handleOpenFullView = () => {
+    if (itemType === "file" && item) {
+      const file = item as any;
+      if (file.blob) {
+        const url = URL.createObjectURL(file.blob);
+        window.open(url, "_blank");
+      }
+    }
   };
 
   const handleDownload = () => {
@@ -176,12 +186,23 @@ export function ActionModals() {
       {}
       <Dialog open={type === "preview"} onOpenChange={(open) => !open && close()}>
         <DialogContent className="flex max-h-[90vh] w-full max-w-4xl flex-col">
-          <DialogHeader className="min-w-0 shrink-0 pr-8">
+          <DialogHeader className="min-w-0 shrink-0 pr-16">
             <DialogTitle className="truncate" title={item?.name}>
               {item?.name}
             </DialogTitle>
             <DialogDescription>{itemType === "file" && `${(item as any).size} bytes`}</DialogDescription>
           </DialogHeader>
+          {itemType === "file" && (item as any)?.blob && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute top-2 right-10"
+              onClick={handleOpenFullView}
+              aria-label="Open in new tab"
+            >
+              <ExternalLink />
+            </Button>
+          )}
           <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md bg-muted/20">
             {renderPreview()}
           </div>

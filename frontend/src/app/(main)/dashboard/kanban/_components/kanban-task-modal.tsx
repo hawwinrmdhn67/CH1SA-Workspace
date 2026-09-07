@@ -111,14 +111,14 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[425px]">
+       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>{task ? "Edit Task" : "Add Task"}</DialogTitle>
           <DialogDescription>
             {task ? "Update the details of your task." : "Create a new task for your Kanban board."}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+         <div className="grid gap-4 py-4 overflow-y-auto max-h-[calc(90vh-200px)]">
           <div className="grid gap-2">
             <Label htmlFor="title">Title</Label>
             <Input

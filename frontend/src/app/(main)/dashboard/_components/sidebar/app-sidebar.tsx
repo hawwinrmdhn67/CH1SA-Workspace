@@ -43,7 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <img
                   src="/logo_hitam.png"
                   alt="Logo"
-                  className="size-7 shrink-0 scale-150 object-contain block dark:hidden"
+                  className="size-7 shrink-0 object-contain block dark:hidden"
                 />
                 <img src="/logo_putih.png" alt="Logo" className="size-7 shrink-0 object-contain hidden dark:block" />
                 <span className="font-semibold text-base">{APP_CONFIG.name}</span>
