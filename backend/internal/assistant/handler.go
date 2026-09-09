@@ -1,7 +1,10 @@
 package assistant
 
 import (
+	"context"
 	"net/http"
+
+	"chisa-assistant-backend/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +29,15 @@ func (h *Handler) HandleChat(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.ProcessMessage(c.Request.Context(), req)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := user.(*models.User).ID
+	ctx := context.WithValue(c.Request.Context(), "userID", userID)
+
+	resp, err := h.service.ProcessMessage(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process message"})
 		return
@@ -47,7 +58,15 @@ func (h *Handler) HandleConfirm(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.ConfirmAction(c.Request.Context(), req)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := user.(*models.User).ID
+	ctx := context.WithValue(c.Request.Context(), "userID", userID)
+
+	resp, err := h.service.ConfirmAction(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to confirm action"})
 		return
@@ -68,7 +87,15 @@ func (h *Handler) HandleToolResult(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.ProcessToolResult(c.Request.Context(), req)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := user.(*models.User).ID
+	ctx := context.WithValue(c.Request.Context(), "userID", userID)
+
+	resp, err := h.service.ProcessToolResult(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process tool result"})
 		return

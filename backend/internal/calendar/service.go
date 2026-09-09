@@ -9,10 +9,10 @@ import (
 )
 
 type Service interface {
-	CreateEvent(ctx context.Context, event *models.CalendarEvent) error
-	ListEvents(ctx context.Context) ([]*models.CalendarEvent, error)
-	UpdateEvent(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error
-	DeleteEvent(ctx context.Context, id uuid.UUID) error
+	CreateEvent(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error
+	ListEvents(ctx context.Context, userID uuid.UUID) ([]*models.CalendarEvent, error)
+	UpdateEvent(ctx context.Context, userID uuid.UUID, id uuid.UUID, updates map[string]interface{}) error
+	DeleteEvent(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 type service struct {
@@ -23,17 +23,17 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) CreateEvent(ctx context.Context, event *models.CalendarEvent) error {
+func (s *service) CreateEvent(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error {
 	event.Calendar = models.NormalizeCalendar(event.Calendar)
-	return s.repo.Create(ctx, event)
+	return s.repo.Create(ctx, userID, event)
 }
 
-func (s *service) ListEvents(ctx context.Context) ([]*models.CalendarEvent, error) {
-	return s.repo.List(ctx)
+func (s *service) ListEvents(ctx context.Context, userID uuid.UUID) ([]*models.CalendarEvent, error) {
+	return s.repo.List(ctx, userID)
 }
 
-func (s *service) UpdateEvent(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error {
-	event, err := s.repo.Get(ctx, id)
+func (s *service) UpdateEvent(ctx context.Context, userID uuid.UUID, id uuid.UUID, updates map[string]interface{}) error {
+	event, err := s.repo.Get(ctx, userID, id)
 	if err != nil {
 		return err
 	}
@@ -68,9 +68,9 @@ func (s *service) UpdateEvent(ctx context.Context, id uuid.UUID, updates map[str
 		event.Calendar = models.NormalizeCalendar(calendar)
 	}
 
-	return s.repo.Update(ctx, event)
+	return s.repo.Update(ctx, userID, event)
 }
 
-func (s *service) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+func (s *service) DeleteEvent(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	return s.repo.Delete(ctx, userID, id)
 }

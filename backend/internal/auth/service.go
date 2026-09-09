@@ -14,13 +14,17 @@ import (
 )
 
 type Service interface {
-	Login(ctx context.Context, password string) (*models.Session, error)
+	Login(ctx context.Context, username, password string) (*models.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 	ValidateSession(ctx context.Context, sessionID uuid.UUID) (*models.User, error)
-	Register(ctx context.Context, displayName, password string) error
-	ResetPassword(ctx context.Context, recoveryCode, newPassword string) error
-	GetRecoveryCode(ctx context.Context) (string, error)
-	RegenerateRecoveryCode(ctx context.Context) (string, error)
+	Register(ctx context.Context, username, displayName, password, role string, mustChangePassword bool) error
+	ResetPassword(ctx context.Context, username, recoveryCode, newPassword string) error
+	GetRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error)
+	RegenerateRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error)
+	VerifyRecoveryCode(ctx context.Context, recoveryCode string) (string, error)
+	UpdateUsername(ctx context.Context, userID uuid.UUID, newUsername string) error
+	ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error
+	ForceResetPassword(ctx context.Context, userID uuid.UUID, newPassword string, mustChangePassword bool) error
 }
 
 type service struct {
@@ -63,7 +67,7 @@ func isBuggyOldCode(code string) bool {
 	return true
 }
 
-func (s *service) Register(ctx context.Context, displayName, password string) error {
+func (s *service) Register(ctx context.Context, username, displayName, password, role string, mustChangePassword bool) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -72,16 +76,20 @@ func (s *service) Register(ctx context.Context, displayName, password string) er
 	code := generateRecoveryCode()
 
 	user := &models.User{
-		DisplayName:  displayName,
-		PasswordHash: string(hash),
-		RecoveryCode: &code,
+		Username:           username,
+		DisplayName:        displayName,
+		PasswordHash:       string(hash),
+		RecoveryCode:       &code,
+		Role:               role,
+		IsActive:           true,
+		MustChangePassword: mustChangePassword,
 	}
 
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *service) ResetPassword(ctx context.Context, recoveryCode, newPassword string) error {
-	user, err := s.repo.GetFirstUser(ctx)
+func (s *service) ResetPassword(ctx context.Context, username, recoveryCode, newPassword string) error {
+	user, err := s.repo.GetUserByUsername(ctx, username)
 	if err != nil {
 		return errors.New("no user found to reset password for")
 	}
@@ -105,8 +113,8 @@ func (s *service) ResetPassword(ctx context.Context, recoveryCode, newPassword s
 	return s.repo.UpdatePassword(ctx, user.ID, string(hash))
 }
 
-func (s *service) GetRecoveryCode(ctx context.Context) (string, error) {
-	user, err := s.repo.GetFirstUser(ctx)
+func (s *service) GetRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		return "", errors.New("no user found")
 	}
@@ -116,8 +124,8 @@ func (s *service) GetRecoveryCode(ctx context.Context) (string, error) {
 	return *user.RecoveryCode, nil
 }
 
-func (s *service) RegenerateRecoveryCode(ctx context.Context) (string, error) {
-	user, err := s.repo.GetFirstUser(ctx)
+func (s *service) RegenerateRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		return "", errors.New("no user found")
 	}
@@ -130,13 +138,44 @@ func (s *service) RegenerateRecoveryCode(ctx context.Context) (string, error) {
 	return newCode, nil
 }
 
-func (s *service) Login(ctx context.Context, password string) (*models.Session, error) {
-	user, err := s.repo.GetFirstUser(ctx)
+func (s *service) VerifyRecoveryCode(ctx context.Context, recoveryCode string) (string, error) {
+	inputCodeNormalized := strings.ToUpper(strings.ReplaceAll(recoveryCode, "-", ""))
+	if inputCodeNormalized == "" {
+		return "", errors.New("invalid recovery code")
+	}
+
+	user, err := s.repo.GetUserByRecoveryCode(ctx, inputCodeNormalized)
 	if err != nil {
-		if err := s.Register(ctx, "Hawwin Ramadhan", "password"); err != nil {
-			return nil, errors.New("failed to initialize workspace user")
+		return "", errors.New("invalid recovery code")
+	}
+	
+	if user.RecoveryCode == nil || isBuggyOldCode(*user.RecoveryCode) {
+		return "", errors.New("invalid recovery code")
+	}
+	
+	return user.Username, nil
+}
+
+func (s *service) Login(ctx context.Context, username, password string) (*models.Session, error) {
+	user, err := s.repo.GetUserByUsername(ctx, username)
+	if err != nil {
+		if username == "admin" {
+			_, checkErr := s.repo.GetFirstUser(ctx)
+			if checkErr != nil {
+				if err := s.Register(ctx, "admin", "Admin", "admin123", "admin", false); err != nil {
+					return nil, errors.New("failed to initialize workspace user")
+				}
+				user, _ = s.repo.GetUserByUsername(ctx, "admin")
+			} else {
+				return nil, errors.New("invalid username or password")
+			}
+		} else {
+			return nil, errors.New("invalid username or password")
 		}
-		user, _ = s.repo.GetFirstUser(ctx)
+	}
+
+	if !user.IsActive {
+		return nil, errors.New("account is deactivated")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
@@ -175,5 +214,49 @@ func (s *service) ValidateSession(ctx context.Context, sessionID uuid.UUID) (*mo
 		return nil, errors.New("session expired")
 	}
 
-	return s.repo.GetUserByID(ctx, session.UserID)
+	user, err := s.repo.GetUserByID(ctx, session.UserID)
+	if err != nil || !user.IsActive {
+		return nil, errors.New("user not found or deactivated")
+	}
+	return user, nil
+}
+
+func (s *service) UpdateUsername(ctx context.Context, userID uuid.UUID, newUsername string) error {
+	newUsername = strings.ToLower(strings.TrimSpace(newUsername))
+	if newUsername == "" {
+		return errors.New("username cannot be empty")
+	}
+	return s.repo.UpdateUsername(ctx, userID, newUsername)
+}
+
+func (s *service) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		return errors.New("invalid current password")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.UpdatePassword(ctx, userID, string(hash))
+}
+
+func (s *service) ForceResetPassword(ctx context.Context, userID uuid.UUID, newPassword string, mustChangePassword bool) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	err = s.repo.ForceUpdatePassword(ctx, userID, string(hash), mustChangePassword)
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }

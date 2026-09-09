@@ -58,33 +58,35 @@ func (r *Router) resolveEntityID(ctx context.Context, args map[string]interface{
 	var id string
 	var err error
 
+	userID, _ := ctx.Value("userID").(uuid.UUID)
+
 	switch entityType {
 	case "task":
-		list, e := r.taskService.ListTasks(ctx)
+		list, e := r.taskService.ListTasks(ctx, userID)
 		if e != nil {
 			return e
 		}
 		id, err = MatchEntity(titleStr, wrapTasks(list))
 	case "event":
-		list, e := r.calendarService.ListEvents(ctx)
+		list, e := r.calendarService.ListEvents(ctx, userID)
 		if e != nil {
 			return e
 		}
 		id, err = MatchEntity(titleStr, wrapEvents(list))
 	case "note":
-		list, e := r.notesService.ListNotes(ctx)
+		list, e := r.notesService.ListNotes(ctx, userID)
 		if e != nil {
 			return e
 		}
 		id, err = MatchEntity(titleStr, wrapNotes(list))
 	case "file":
-		list, e := r.filesService.ListFiles(ctx)
+		list, e := r.filesService.ListFiles(ctx, userID)
 		if e != nil {
 			return e
 		}
 		id, err = MatchEntity(titleStr, wrapFiles(list))
 	case "folder":
-		list, e := r.filesService.ListFolders(ctx)
+		list, e := r.filesService.ListFolders(ctx, userID)
 		if e != nil {
 			return e
 		}
@@ -260,6 +262,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 	}
 
 	var executeErr error
+	userID, _ := ctx.Value("userID").(uuid.UUID)
 
 	switch toolName {
 	case "create_task":
@@ -277,7 +280,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			}
 		}
 
-		executeErr = r.taskService.CreateTask(ctx, &models.Task{
+		executeErr = r.taskService.CreateTask(ctx, userID, &models.Task{
 			Title:       getString(args, "title"),
 			Description: getString(args, "description"),
 			Priority:    normalizePriority(getString(args, "priority")),
@@ -288,7 +291,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		})
 	case "update_task":
 		taskID := parseUUID(getString(args, "id"))
-		existingTask, err := r.taskService.GetTask(ctx, taskID)
+		existingTask, err := r.taskService.GetTask(ctx, userID, taskID)
 		if err != nil {
 			executeErr = fmt.Errorf("task not found: %w", err)
 			break
@@ -327,11 +330,11 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 				}
 			}
 		}
-		executeErr = r.taskService.UpdateTask(ctx, existingTask)
+		executeErr = r.taskService.UpdateTask(ctx, userID, existingTask)
 
 	case "add_subtask":
 		taskID := parseUUID(getString(args, "taskId"))
-		existingTask, err := r.taskService.GetTask(ctx, taskID)
+		existingTask, err := r.taskService.GetTask(ctx, userID, taskID)
 		if err != nil {
 			executeErr = fmt.Errorf("task not found: %w", err)
 			break
@@ -345,11 +348,11 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			Title:       title,
 			IsCompleted: false,
 		})
-		executeErr = r.taskService.UpdateTask(ctx, existingTask)
+		executeErr = r.taskService.UpdateTask(ctx, userID, existingTask)
 
 	case "update_subtask":
 		taskID := parseUUID(getString(args, "taskId"))
-		existingTask, err := r.taskService.GetTask(ctx, taskID)
+		existingTask, err := r.taskService.GetTask(ctx, userID, taskID)
 		if err != nil {
 			executeErr = fmt.Errorf("task not found: %w", err)
 			break
@@ -377,11 +380,11 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		if val, ok := args["isCompleted"].(bool); ok {
 			existingTask.Subtasks[matchIndex].IsCompleted = val
 		}
-		executeErr = r.taskService.UpdateTask(ctx, existingTask)
+		executeErr = r.taskService.UpdateTask(ctx, userID, existingTask)
 
 	case "delete_subtask":
 		taskID := parseUUID(getString(args, "taskId"))
-		existingTask, err := r.taskService.GetTask(ctx, taskID)
+		existingTask, err := r.taskService.GetTask(ctx, userID, taskID)
 		if err != nil {
 			executeErr = fmt.Errorf("task not found: %w", err)
 			break
@@ -405,10 +408,10 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			break
 		}
 		existingTask.Subtasks = newSubtasks
-		executeErr = r.taskService.UpdateTask(ctx, existingTask)
+		executeErr = r.taskService.UpdateTask(ctx, userID, existingTask)
 
 	case "delete_task":
-		executeErr = r.taskService.DeleteTask(ctx, parseUUID(getString(args, "id")))
+		executeErr = r.taskService.DeleteTask(ctx, userID, parseUUID(getString(args, "id")))
 
 	case "bulk_update_tasks":
 		if taskIds, ok := args["taskIds"].([]interface{}); ok {
@@ -416,7 +419,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			for _, idInterface := range taskIds {
 				if idStr, ok := idInterface.(string); ok {
 					taskID := parseUUID(idStr)
-					existingTask, err := r.taskService.GetTask(ctx, taskID)
+					existingTask, err := r.taskService.GetTask(ctx, userID, taskID)
 					if err != nil {
 						errs = append(errs, fmt.Sprintf("Failed to get %s: %v", idStr, err))
 						continue
@@ -427,7 +430,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 					if val, ok := args["status"].(string); ok {
 						existingTask.Status = normalizeStatus(val)
 					}
-					err = r.taskService.UpdateTask(ctx, existingTask)
+					err = r.taskService.UpdateTask(ctx, userID, existingTask)
 					if err != nil {
 						errs = append(errs, fmt.Sprintf("Failed to update %s: %v", idStr, err))
 					}
@@ -443,7 +446,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			var errs []string
 			for _, idInterface := range taskIds {
 				if idStr, ok := idInterface.(string); ok {
-					err := r.taskService.DeleteTask(ctx, parseUUID(idStr))
+					err := r.taskService.DeleteTask(ctx, userID, parseUUID(idStr))
 					if err != nil {
 						errs = append(errs, fmt.Sprintf("Failed to delete %s: %v", idStr, err))
 					}
@@ -455,7 +458,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		}
 
 	case "search_tasks":
-		tasksList, err := r.taskService.ListTasks(ctx)
+		tasksList, err := r.taskService.ListTasks(ctx, userID)
 		if err == nil {
 			compact := make([]map[string]interface{}, 0)
 			for i, t := range tasksList {
@@ -478,7 +481,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			executeErr = fmt.Errorf("invalid or missing task id")
 			break
 		}
-		task, err := r.taskService.GetTask(ctx, taskID)
+		task, err := r.taskService.GetTask(ctx, userID, taskID)
 		if err == nil {
 			args["task"] = task
 		} else {
@@ -490,7 +493,7 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		if v, ok := args["allDay"].(bool); ok {
 			allDay = v
 		}
-		executeErr = r.calendarService.CreateEvent(ctx, &models.CalendarEvent{
+		executeErr = r.calendarService.CreateEvent(ctx, userID, &models.CalendarEvent{
 			Title:       getString(args, "title"),
 			Description: getString(args, "description"),
 			Date:        getString(args, "date"),
@@ -500,9 +503,9 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			Calendar:    getString(args, "calendar"),
 		})
 	case "delete_event":
-		executeErr = r.calendarService.DeleteEvent(ctx, parseUUID(getString(args, "id")))
+		executeErr = r.calendarService.DeleteEvent(ctx, userID, parseUUID(getString(args, "id")))
 	case "search_events", "get_event":
-		eventsList, err := r.calendarService.ListEvents(ctx)
+		eventsList, err := r.calendarService.ListEvents(ctx, userID)
 		if err == nil {
 			compact := make([]map[string]interface{}, 0)
 			for i, e := range eventsList {
@@ -519,14 +522,14 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 		}
 
 	case "create_note":
-		executeErr = r.notesService.CreateNote(ctx, &models.Note{
+		executeErr = r.notesService.CreateNote(ctx, userID, &models.Note{
 			Title:   getString(args, "title"),
 			Content: getString(args, "content"),
 		})
 	case "delete_note":
-		executeErr = r.notesService.DeleteNote(ctx, parseUUID(getString(args, "id")))
+		executeErr = r.notesService.DeleteNote(ctx, userID, parseUUID(getString(args, "id")))
 	case "search_notes", "get_note":
-		notesList, err := r.notesService.ListNotes(ctx)
+		notesList, err := r.notesService.ListNotes(ctx, userID)
 		if err == nil {
 			compact := make([]map[string]interface{}, 0)
 			for i, n := range notesList {
@@ -555,13 +558,13 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 				parentID = &pid
 			}
 		}
-		executeErr = r.filesService.CreateFolder(ctx, &models.Folder{
+		executeErr = r.filesService.CreateFolder(ctx, userID, &models.Folder{
 			Name:     getString(args, "name"),
 			ParentID: parentID,
 		})
 	case "update_folder":
 		folderID := parseUUID(getString(args, "id"))
-		existingFolder, err := r.filesService.GetFolder(ctx, folderID)
+		existingFolder, err := r.filesService.GetFolder(ctx, userID, folderID)
 		if err != nil {
 			executeErr = fmt.Errorf("folder not found: %w", err)
 			break
@@ -582,14 +585,14 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 				}
 			}
 		}
-		executeErr = r.filesService.UpdateFolder(ctx, existingFolder)
+		executeErr = r.filesService.UpdateFolder(ctx, userID, existingFolder)
 		
 	case "delete_folder":
-		executeErr = r.filesService.DeleteFolder(ctx, parseUUID(getString(args, "id")))
+		executeErr = r.filesService.DeleteFolder(ctx, userID, parseUUID(getString(args, "id")))
 		
 	case "update_file":
 		fileID := parseUUID(getString(args, "id"))
-		existingFile, err := r.filesService.GetFile(ctx, fileID)
+		existingFile, err := r.filesService.GetFile(ctx, userID, fileID)
 		if err != nil {
 			executeErr = fmt.Errorf("file not found: %w", err)
 			break
@@ -610,13 +613,13 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 				}
 			}
 		}
-		executeErr = r.filesService.UpdateFile(ctx, existingFile)
+		executeErr = r.filesService.UpdateFile(ctx, userID, existingFile)
 		
 	case "delete_file":
-		executeErr = r.filesService.DeleteFile(ctx, parseUUID(getString(args, "id")))
+		executeErr = r.filesService.DeleteFile(ctx, userID, parseUUID(getString(args, "id")))
 	case "search_files", "search_folders":
-		filesList, err1 := r.filesService.ListFiles(ctx)
-		foldersList, err2 := r.filesService.ListFolders(ctx)
+		filesList, err1 := r.filesService.ListFiles(ctx, userID)
+		foldersList, err2 := r.filesService.ListFolders(ctx, userID)
 		if err1 == nil && err2 == nil {
 			compactFiles := make([]map[string]interface{}, 0)
 			for i, f := range filesList {
@@ -654,28 +657,28 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			if str, ok := s.(string); ok {
 				switch str {
 				case "tasks":
-					tasksList, _ := r.taskService.ListTasks(ctx)
+					tasksList, _ := r.taskService.ListTasks(ctx, userID)
 					for _, t := range tasksList {
-						r.taskService.DeleteTask(ctx, t.ID)
+						r.taskService.DeleteTask(ctx, userID, t.ID)
 					}
 				case "calendar":
-					eventsList, _ := r.calendarService.ListEvents(ctx)
+					eventsList, _ := r.calendarService.ListEvents(ctx, userID)
 					for _, e := range eventsList {
-						r.calendarService.DeleteEvent(ctx, e.ID)
+						r.calendarService.DeleteEvent(ctx, userID, e.ID)
 					}
 				case "notes":
-					notesList, _ := r.notesService.ListNotes(ctx)
+					notesList, _ := r.notesService.ListNotes(ctx, userID)
 					for _, n := range notesList {
-						r.notesService.DeleteNote(ctx, n.ID)
+						r.notesService.DeleteNote(ctx, userID, n.ID)
 					}
 				case "files":
-					filesList, _ := r.filesService.ListFiles(ctx)
+					filesList, _ := r.filesService.ListFiles(ctx, userID)
 					for _, f := range filesList {
-						r.filesService.DeleteFile(ctx, f.ID)
+						r.filesService.DeleteFile(ctx, userID, f.ID)
 					}
-					foldersList, _ := r.filesService.ListFolders(ctx)
+					foldersList, _ := r.filesService.ListFolders(ctx, userID)
 					for _, f := range foldersList {
-						r.filesService.DeleteFolder(ctx, f.ID)
+						r.filesService.DeleteFolder(ctx, userID, f.ID)
 					}
 				}
 			}

@@ -29,7 +29,14 @@ func (h *Handler) CreateFolder(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateFolder(c.Request.Context(), &folder); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.CreateFolder(c.Request.Context(), userID, &folder); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to create folder"}})
 		return
 	}
@@ -38,7 +45,14 @@ func (h *Handler) CreateFolder(c *gin.Context) {
 }
 
 func (h *Handler) ListFolders(c *gin.Context) {
-	folders, err := h.service.ListFolders(c.Request.Context())
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	folders, err := h.service.ListFolders(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to fetch folders"}})
 		return
@@ -66,7 +80,14 @@ func (h *Handler) UpdateFolder(c *gin.Context) {
 	}
 	updates.ID = id
 
-	if err := h.service.UpdateFolder(c.Request.Context(), &updates); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.UpdateFolder(c.Request.Context(), userID, &updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to update folder"}})
 		return
 	}
@@ -82,7 +103,14 @@ func (h *Handler) DeleteFolder(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteFolder(c.Request.Context(), id); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.DeleteFolder(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to delete folder"}})
 		return
 	}
@@ -102,7 +130,14 @@ func (h *Handler) CreateFile(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateFile(c.Request.Context(), &file); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.CreateFile(c.Request.Context(), userID, &file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to create file"}})
 		return
 	}
@@ -111,7 +146,14 @@ func (h *Handler) CreateFile(c *gin.Context) {
 }
 
 func (h *Handler) ListFiles(c *gin.Context) {
-	files, err := h.service.ListFiles(c.Request.Context())
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	files, err := h.service.ListFiles(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to fetch files"}})
 		return
@@ -139,7 +181,14 @@ func (h *Handler) UpdateFile(c *gin.Context) {
 	}
 	updates.ID = id
 
-	if err := h.service.UpdateFile(c.Request.Context(), &updates); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.UpdateFile(c.Request.Context(), userID, &updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to update file"}})
 		return
 	}
@@ -155,7 +204,14 @@ func (h *Handler) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteFile(c.Request.Context(), id); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.DeleteFile(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to delete file"}})
 		return
 	}

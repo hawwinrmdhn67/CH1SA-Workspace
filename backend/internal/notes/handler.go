@@ -29,7 +29,14 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateNote(c.Request.Context(), &note); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.CreateNote(c.Request.Context(), userID, &note); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to create note"}})
 		return
 	}
@@ -38,7 +45,14 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) List(c *gin.Context) {
-	notes, err := h.service.ListNotes(c.Request.Context())
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	notes, err := h.service.ListNotes(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to fetch notes"}})
 		return
@@ -59,7 +73,14 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
-	note, err := h.service.GetNote(c.Request.Context(), id)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	note, err := h.service.GetNote(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Note not found"}})
 		return
@@ -82,7 +103,14 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	existing, err := h.service.GetNote(c.Request.Context(), id)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	existing, err := h.service.GetNote(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Note not found"}})
 		return
@@ -95,7 +123,7 @@ func (h *Handler) Update(c *gin.Context) {
 		existing.Content = updates.Content
 	}
 
-	if err := h.service.UpdateNote(c.Request.Context(), existing); err != nil {
+	if err := h.service.UpdateNote(c.Request.Context(), userID, existing); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to update note"}})
 		return
 	}
@@ -111,7 +139,14 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteNote(c.Request.Context(), id); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.DeleteNote(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to delete note"}})
 		return
 	}

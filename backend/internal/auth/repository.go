@@ -14,8 +14,12 @@ import (
 type Repository interface {
 	GetFirstUser(ctx context.Context) (*models.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	GetUserByRecoveryCode(ctx context.Context, recoveryCode string) (*models.User, error)
 	CreateUser(ctx context.Context, user *models.User) error
 	UpdatePassword(ctx context.Context, userID uuid.UUID, newPasswordHash string) error
+	ForceUpdatePassword(ctx context.Context, userID uuid.UUID, newPasswordHash string, mustChangePassword bool) error
+	UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
 	UpdateRecoveryCode(ctx context.Context, userID uuid.UUID, code string) error
 	CreateSession(ctx context.Context, session *models.Session) error
 	GetSession(ctx context.Context, id uuid.UUID) (*models.Session, error)
@@ -29,10 +33,10 @@ func NewRepository() Repository {
 }
 
 func (r *repository) GetFirstUser(ctx context.Context) (*models.User, error) {
-	query := `SELECT id, display_name, password_hash, recovery_code, created_at, updated_at FROM users LIMIT 1`
+	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users LIMIT 1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query).Scan(
-		&user.ID, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -41,10 +45,34 @@ func (r *repository) GetFirstUser(ctx context.Context) (*models.User, error) {
 }
 
 func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
-	query := `SELECT id, display_name, password_hash, recovery_code, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE id = $1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *repository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE username = $1`
+	user := &models.User{}
+	err := database.Pool.QueryRow(ctx, query, username).Scan(
+		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *repository) GetUserByRecoveryCode(ctx context.Context, recoveryCode string) (*models.User, error) {
+	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE REPLACE(UPPER(recovery_code), '-', '') = $1`
+	user := &models.User{}
+	err := database.Pool.QueryRow(ctx, query, recoveryCode).Scan(
+		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -54,15 +82,15 @@ func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.Use
 
 func (r *repository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (display_name, password_hash, recovery_code, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	now := time.Now()
 	user.CreatedAt = now
 	user.UpdatedAt = now
 
-	err := database.Pool.QueryRow(ctx, query, user.DisplayName, user.PasswordHash, user.RecoveryCode, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+	err := database.Pool.QueryRow(ctx, query, user.Username, user.DisplayName, user.PasswordHash, user.RecoveryCode, user.Role, user.IsActive, user.MustChangePassword, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -70,10 +98,28 @@ func (r *repository) CreateUser(ctx context.Context, user *models.User) error {
 }
 
 func (r *repository) UpdatePassword(ctx context.Context, userID uuid.UUID, newPasswordHash string) error {
-	query := `UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3`
+	query := `UPDATE users SET password_hash = $1, must_change_password = false, updated_at = $2 WHERE id = $3`
 	_, err := database.Pool.Exec(ctx, query, newPasswordHash, time.Now(), userID)
 	if err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
+	}
+	return nil
+}
+
+func (r *repository) ForceUpdatePassword(ctx context.Context, userID uuid.UUID, newPasswordHash string, mustChangePassword bool) error {
+	query := `UPDATE users SET password_hash = $1, must_change_password = $2, updated_at = $3 WHERE id = $4`
+	_, err := database.Pool.Exec(ctx, query, newPasswordHash, mustChangePassword, time.Now(), userID)
+	if err != nil {
+		return fmt.Errorf("failed to force update password: %w", err)
+	}
+	return nil
+}
+
+func (r *repository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	query := `UPDATE users SET username = $1, updated_at = $2 WHERE id = $3`
+	_, err := database.Pool.Exec(ctx, query, username, time.Now(), userID)
+	if err != nil {
+		return fmt.Errorf("failed to update username: %w", err)
 	}
 	return nil
 }

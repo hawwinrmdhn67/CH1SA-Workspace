@@ -8,6 +8,7 @@ import (
 
 type Folder struct {
 	ID        uuid.UUID  `json:"id"`
+	UserID    uuid.UUID  `json:"-"`
 	Name      string     `json:"name"`
 	ParentID  *uuid.UUID `json:"parentId"`
 	IsStarred bool       `json:"isStarred"`
@@ -17,6 +18,7 @@ type Folder struct {
 
 type File struct {
 	ID        uuid.UUID  `json:"id"`
+	UserID    uuid.UUID  `json:"-"`
 	Name      string     `json:"name"`
 	FolderID  *uuid.UUID `json:"folderId"`
 	Kind      string     `json:"kind"`

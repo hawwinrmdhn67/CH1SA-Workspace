@@ -9,6 +9,7 @@ import (
 
 type CalendarEvent struct {
 	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"-"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Date        string    `json:"date"`

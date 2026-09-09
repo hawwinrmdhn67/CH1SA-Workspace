@@ -30,6 +30,14 @@ func RequireAuth(authService auth.Service) gin.HandlerFunc {
 			return
 		}
 
+		if user.MustChangePassword {
+			path := c.Request.URL.Path
+			if path != "/api/auth/change-password" && path != "/api/auth/logout" && path != "/api/auth/me" {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Password change required", "code": "MUST_CHANGE_PASSWORD"}})
+				return
+			}
+		}
+
 		c.Set("user", user)
 		c.Next()
 	}

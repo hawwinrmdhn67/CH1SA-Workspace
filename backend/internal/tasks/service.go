@@ -11,11 +11,11 @@ import (
 )
 
 type Service interface {
-	CreateTask(ctx context.Context, task *models.Task) error
-	GetTask(ctx context.Context, id uuid.UUID) (*models.Task, error)
-	ListTasks(ctx context.Context) ([]*models.Task, error)
-	UpdateTask(ctx context.Context, task *models.Task) error
-	DeleteTask(ctx context.Context, id uuid.UUID) error
+	CreateTask(ctx context.Context, userID uuid.UUID, task *models.Task) error
+	GetTask(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Task, error)
+	ListTasks(ctx context.Context, userID uuid.UUID) ([]*models.Task, error)
+	UpdateTask(ctx context.Context, userID uuid.UUID, task *models.Task) error
+	DeleteTask(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 type service struct {
@@ -43,7 +43,7 @@ func validateDates(startDate, dueDate *string) error {
 	return nil
 }
 
-func (s *service) CreateTask(ctx context.Context, task *models.Task) error {
+func (s *service) CreateTask(ctx context.Context, userID uuid.UUID, task *models.Task) error {
 	if err := validateDates(task.StartDate, task.DueDate); err != nil {
 		return err
 	}
@@ -53,24 +53,24 @@ func (s *service) CreateTask(ctx context.Context, task *models.Task) error {
 	if task.Priority == "" {
 		task.Priority = "None"
 	}
-	return s.repo.Create(ctx, task)
+	return s.repo.Create(ctx, userID, task)
 }
 
-func (s *service) GetTask(ctx context.Context, id uuid.UUID) (*models.Task, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *service) GetTask(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Task, error) {
+	return s.repo.GetByID(ctx, userID, id)
 }
 
-func (s *service) ListTasks(ctx context.Context) ([]*models.Task, error) {
-	return s.repo.List(ctx)
+func (s *service) ListTasks(ctx context.Context, userID uuid.UUID) ([]*models.Task, error) {
+	return s.repo.List(ctx, userID)
 }
 
-func (s *service) UpdateTask(ctx context.Context, task *models.Task) error {
+func (s *service) UpdateTask(ctx context.Context, userID uuid.UUID, task *models.Task) error {
 	if err := validateDates(task.StartDate, task.DueDate); err != nil {
 		return err
 	}
-	return s.repo.Update(ctx, task)
+	return s.repo.Update(ctx, userID, task)
 }
 
-func (s *service) DeleteTask(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+func (s *service) DeleteTask(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	return s.repo.Delete(ctx, userID, id)
 }

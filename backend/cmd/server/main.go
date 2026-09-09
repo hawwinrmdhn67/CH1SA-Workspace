@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"chisa-assistant-backend/internal/admin"
 	"chisa-assistant-backend/internal/assistant"
 	"chisa-assistant-backend/internal/auth"
 	"chisa-assistant-backend/internal/calendar"
@@ -52,6 +53,10 @@ func main() {
 	authRepo := auth.NewRepository()
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
+
+	adminRepo := admin.NewRepository()
+	adminService := admin.NewService(adminRepo, authService)
+	adminHandler := admin.NewHandler(adminService)
 
 	assistantService, err := assistant.NewService(cfg, taskService, calendarService, notesService, filesService)
 	if err != nil {
@@ -108,15 +113,27 @@ func main() {
 	authRoutes := api.Group("/auth")
 	{
 		authRoutes.POST("/login", authHandler.Login)
-		authRoutes.POST("/register", authHandler.Register)
+		authRoutes.POST("/verify-recovery", authHandler.VerifyRecoveryCode)
 		authRoutes.POST("/reset-password", authHandler.ResetPassword)
 		authRoutes.POST("/logout", authHandler.Logout)
 
 		protectedAuth := authRoutes.Group("")
 		protectedAuth.Use(auth_middleware.RequireAuth(authService))
 		protectedAuth.GET("/me", authHandler.Me)
+		protectedAuth.POST("/change-password", authHandler.ChangePassword)
+		protectedAuth.PATCH("/username", authHandler.UpdateUsername)
 		protectedAuth.GET("/recovery", authHandler.GetRecoveryCode)
 		protectedAuth.POST("/recovery/generate", authHandler.GenerateRecoveryCode)
+	}
+
+	adminRoutes := api.Group("/admin/users")
+	adminRoutes.Use(auth_middleware.RequireAuth(authService), auth_middleware.RequireAdmin())
+	{
+		adminRoutes.GET("", adminHandler.ListUsers)
+		adminRoutes.POST("", adminHandler.CreateUser)
+		adminRoutes.PATCH("/:id", adminHandler.UpdateUser)
+		adminRoutes.DELETE("/:id", adminHandler.DeleteUser)
+		adminRoutes.POST("/:id/reset-password", adminHandler.ResetUserPassword)
 	}
 
 	taskRoutes := api.Group("/tasks")
@@ -149,7 +166,7 @@ func main() {
 	}
 
 	foldersRoutes := api.Group("/folders")
-	foldersRoutes.Use(auth_middleware.RequireAuth(authService))
+	foldersRoutes.Use(auth_middleware.RequireAuth(authService), auth_middleware.RequireAdmin())
 	{
 		foldersRoutes.GET("", filesHandler.ListFolders)
 		foldersRoutes.POST("", filesHandler.CreateFolder)
@@ -158,7 +175,7 @@ func main() {
 	}
 
 	filesRoutes := api.Group("/files")
-	filesRoutes.Use(auth_middleware.RequireAuth(authService))
+	filesRoutes.Use(auth_middleware.RequireAuth(authService), auth_middleware.RequireAdmin())
 	{
 		filesRoutes.GET("", filesHandler.ListFiles)
 		filesRoutes.POST("", filesHandler.CreateFile)

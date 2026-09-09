@@ -30,7 +30,14 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateTask(c.Request.Context(), &task); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.CreateTask(c.Request.Context(), userID, &task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to create task"}})
 		return
 	}
@@ -39,7 +46,14 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) List(c *gin.Context) {
-	tasks, err := h.service.ListTasks(c.Request.Context())
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	tasks, err := h.service.ListTasks(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to fetch tasks"}})
 		return
@@ -60,7 +74,14 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
-	task, err := h.service.GetTask(c.Request.Context(), id)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	task, err := h.service.GetTask(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Task not found"}})
 		return
@@ -83,7 +104,14 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	existing, err := h.service.GetTask(c.Request.Context(), id)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	existing, err := h.service.GetTask(c.Request.Context(), userID, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Task not found"}})
 		return
@@ -127,7 +155,7 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 	}
 
-	if err := h.service.UpdateTask(c.Request.Context(), existing); err != nil {
+	if err := h.service.UpdateTask(c.Request.Context(), userID, existing); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to update task: " + err.Error()}})
 		return
 	}
@@ -143,7 +171,14 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteTask(c.Request.Context(), id); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.DeleteTask(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to delete task"}})
 		return
 	}

@@ -8,6 +8,7 @@ import (
 
 type Note struct {
 	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"-"`
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`

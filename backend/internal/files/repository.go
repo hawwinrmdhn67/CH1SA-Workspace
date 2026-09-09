@@ -12,17 +12,17 @@ import (
 )
 
 type Repository interface {
-	CreateFolder(ctx context.Context, folder *models.Folder) error
-	GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error)
-	ListFolders(ctx context.Context) ([]*models.Folder, error)
-	UpdateFolder(ctx context.Context, folder *models.Folder) error
-	DeleteFolder(ctx context.Context, id uuid.UUID) error
+	CreateFolder(ctx context.Context, userID uuid.UUID, folder *models.Folder) error
+	GetFolder(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Folder, error)
+	ListFolders(ctx context.Context, userID uuid.UUID) ([]*models.Folder, error)
+	UpdateFolder(ctx context.Context, userID uuid.UUID, folder *models.Folder) error
+	DeleteFolder(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 
-	CreateFile(ctx context.Context, file *models.File) error
-	GetFile(ctx context.Context, id uuid.UUID) (*models.File, error)
-	ListFiles(ctx context.Context) ([]*models.File, error)
-	UpdateFile(ctx context.Context, file *models.File) error
-	DeleteFile(ctx context.Context, id uuid.UUID) error
+	CreateFile(ctx context.Context, userID uuid.UUID, file *models.File) error
+	GetFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.File, error)
+	ListFiles(ctx context.Context, userID uuid.UUID) ([]*models.File, error)
+	UpdateFile(ctx context.Context, userID uuid.UUID, file *models.File) error
+	DeleteFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 type repository struct{}
@@ -31,10 +31,10 @@ func NewRepository() Repository {
 	return &repository{}
 }
 
-func (r *repository) CreateFolder(ctx context.Context, folder *models.Folder) error {
+func (r *repository) CreateFolder(ctx context.Context, userID uuid.UUID, folder *models.Folder) error {
 	query := `
-		INSERT INTO folders (name, parent_folder_id, is_starred, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO folders (user_id, name, parent_folder_id, is_starred, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
 	now := time.Now()
@@ -42,6 +42,7 @@ func (r *repository) CreateFolder(ctx context.Context, folder *models.Folder) er
 	folder.UpdatedAt = now
 
 	err := database.Pool.QueryRow(ctx, query,
+		userID,
 		folder.Name,
 		folder.ParentID,
 		folder.IsStarred,
@@ -55,10 +56,10 @@ func (r *repository) CreateFolder(ctx context.Context, folder *models.Folder) er
 	return nil
 }
 
-func (r *repository) GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error) {
-	query := `SELECT id, name, parent_folder_id, is_starred, created_at, updated_at FROM folders WHERE id = $1`
+func (r *repository) GetFolder(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Folder, error) {
+	query := `SELECT id, name, parent_folder_id, is_starred, created_at, updated_at FROM folders WHERE id = $1 AND user_id = $2`
 	folder := &models.Folder{}
-	err := database.Pool.QueryRow(ctx, query, id).Scan(
+	err := database.Pool.QueryRow(ctx, query, id, userID).Scan(
 		&folder.ID,
 		&folder.Name,
 		&folder.ParentID,
@@ -72,9 +73,9 @@ func (r *repository) GetFolder(ctx context.Context, id uuid.UUID) (*models.Folde
 	return folder, nil
 }
 
-func (r *repository) ListFolders(ctx context.Context) ([]*models.Folder, error) {
-	query := `SELECT id, name, parent_folder_id, is_starred, created_at, updated_at FROM folders ORDER BY name ASC`
-	rows, err := database.Pool.Query(ctx, query)
+func (r *repository) ListFolders(ctx context.Context, userID uuid.UUID) ([]*models.Folder, error) {
+	query := `SELECT id, name, parent_folder_id, is_starred, created_at, updated_at FROM folders WHERE user_id = $1 ORDER BY name ASC`
+	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list folders: %w", err)
 	}
@@ -99,11 +100,11 @@ func (r *repository) ListFolders(ctx context.Context) ([]*models.Folder, error) 
 	return folders, nil
 }
 
-func (r *repository) UpdateFolder(ctx context.Context, folder *models.Folder) error {
+func (r *repository) UpdateFolder(ctx context.Context, userID uuid.UUID, folder *models.Folder) error {
 	query := `
 		UPDATE folders
 		SET name = $1, parent_folder_id = $2, is_starred = $3, updated_at = $4
-		WHERE id = $5
+		WHERE id = $5 AND user_id = $6
 	`
 	folder.UpdatedAt = time.Now()
 	_, err := database.Pool.Exec(ctx, query,
@@ -112,6 +113,7 @@ func (r *repository) UpdateFolder(ctx context.Context, folder *models.Folder) er
 		folder.IsStarred,
 		folder.UpdatedAt,
 		folder.ID,
+		userID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update folder: %w", err)
@@ -119,19 +121,19 @@ func (r *repository) UpdateFolder(ctx context.Context, folder *models.Folder) er
 	return nil
 }
 
-func (r *repository) DeleteFolder(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM folders WHERE id = $1`
-	_, err := database.Pool.Exec(ctx, query, id)
+func (r *repository) DeleteFolder(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	query := `DELETE FROM folders WHERE id = $1 AND user_id = $2`
+	_, err := database.Pool.Exec(ctx, query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete folder: %w", err)
 	}
 	return nil
 }
 
-func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
+func (r *repository) CreateFile(ctx context.Context, userID uuid.UUID, file *models.File) error {
 	query := `
-		INSERT INTO files (id, name, folder_id, kind, size, is_starred, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO files (user_id, id, name, folder_id, kind, size, is_starred, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	now := time.Now()
@@ -143,6 +145,7 @@ func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
 	}
 
 	err := database.Pool.QueryRow(ctx, query,
+		userID,
 		file.ID,
 		file.Name,
 		file.FolderID,
@@ -159,10 +162,10 @@ func (r *repository) CreateFile(ctx context.Context, file *models.File) error {
 	return nil
 }
 
-func (r *repository) GetFile(ctx context.Context, id uuid.UUID) (*models.File, error) {
-	query := `SELECT id, name, folder_id, kind, size, is_starred, created_at, updated_at FROM files WHERE id = $1`
+func (r *repository) GetFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.File, error) {
+	query := `SELECT id, name, folder_id, kind, size, is_starred, created_at, updated_at FROM files WHERE id = $1 AND user_id = $2`
 	file := &models.File{}
-	err := database.Pool.QueryRow(ctx, query, id).Scan(
+	err := database.Pool.QueryRow(ctx, query, id, userID).Scan(
 		&file.ID,
 		&file.Name,
 		&file.FolderID,
@@ -178,9 +181,9 @@ func (r *repository) GetFile(ctx context.Context, id uuid.UUID) (*models.File, e
 	return file, nil
 }
 
-func (r *repository) ListFiles(ctx context.Context) ([]*models.File, error) {
-	query := `SELECT id, name, folder_id, kind, size, is_starred, created_at, updated_at FROM files ORDER BY name ASC`
-	rows, err := database.Pool.Query(ctx, query)
+func (r *repository) ListFiles(ctx context.Context, userID uuid.UUID) ([]*models.File, error) {
+	query := `SELECT id, name, folder_id, kind, size, is_starred, created_at, updated_at FROM files WHERE user_id = $1 ORDER BY name ASC`
+	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list files: %w", err)
 	}
@@ -207,11 +210,11 @@ func (r *repository) ListFiles(ctx context.Context) ([]*models.File, error) {
 	return files, nil
 }
 
-func (r *repository) UpdateFile(ctx context.Context, file *models.File) error {
+func (r *repository) UpdateFile(ctx context.Context, userID uuid.UUID, file *models.File) error {
 	query := `
 		UPDATE files
 		SET name = $1, folder_id = $2, is_starred = $3, updated_at = $4
-		WHERE id = $5
+		WHERE id = $5 AND user_id = $6
 	`
 	file.UpdatedAt = time.Now()
 	_, err := database.Pool.Exec(ctx, query,
@@ -220,6 +223,7 @@ func (r *repository) UpdateFile(ctx context.Context, file *models.File) error {
 		file.IsStarred,
 		file.UpdatedAt,
 		file.ID,
+		userID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update file: %w", err)
@@ -227,9 +231,9 @@ func (r *repository) UpdateFile(ctx context.Context, file *models.File) error {
 	return nil
 }
 
-func (r *repository) DeleteFile(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM files WHERE id = $1`
-	_, err := database.Pool.Exec(ctx, query, id)
+func (r *repository) DeleteFile(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	query := `DELETE FROM files WHERE id = $1 AND user_id = $2`
+	_, err := database.Pool.Exec(ctx, query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}

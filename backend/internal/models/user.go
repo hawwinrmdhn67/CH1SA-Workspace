@@ -7,12 +7,16 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
-	DisplayName  string    `json:"display_name"`
-	PasswordHash string    `json:"-"`
-	RecoveryCode *string   `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 uuid.UUID `json:"id"`
+	Username           string    `json:"username"`
+	DisplayName        string    `json:"display_name"`
+	PasswordHash       string    `json:"-"`
+	RecoveryCode       *string   `json:"-"`
+	Role               string    `json:"role"`
+	IsActive           bool      `json:"is_active"`
+	MustChangePassword bool      `json:"must_change_password"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 type Session struct {

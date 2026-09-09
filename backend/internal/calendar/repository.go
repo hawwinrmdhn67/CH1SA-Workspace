@@ -12,11 +12,11 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, event *models.CalendarEvent) error
-	List(ctx context.Context) ([]*models.CalendarEvent, error)
-	Get(ctx context.Context, id uuid.UUID) (*models.CalendarEvent, error)
-	Update(ctx context.Context, event *models.CalendarEvent) error
-	Delete(ctx context.Context, id uuid.UUID) error
+	Create(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error
+	List(ctx context.Context, userID uuid.UUID) ([]*models.CalendarEvent, error)
+	Get(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.CalendarEvent, error)
+	Update(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error
+	Delete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 type repository struct{}
@@ -25,10 +25,10 @@ func NewRepository() Repository {
 	return &repository{}
 }
 
-func (r *repository) Create(ctx context.Context, event *models.CalendarEvent) error {
+func (r *repository) Create(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error {
 	query := `
-		INSERT INTO calendar_events (title, description, date, start_time, end_time, all_day, calendar, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO calendar_events (user_id, title, description, date, start_time, end_time, all_day, calendar, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
 	`
 	now := time.Now()
@@ -36,6 +36,7 @@ func (r *repository) Create(ctx context.Context, event *models.CalendarEvent) er
 	event.UpdatedAt = now
 
 	err := database.Pool.QueryRow(ctx, query,
+		userID,
 		event.Title,
 		event.Description,
 		event.Date,
@@ -53,13 +54,14 @@ func (r *repository) Create(ctx context.Context, event *models.CalendarEvent) er
 	return nil
 }
 
-func (r *repository) List(ctx context.Context) ([]*models.CalendarEvent, error) {
+func (r *repository) List(ctx context.Context, userID uuid.UUID) ([]*models.CalendarEvent, error) {
 	query := `
 		SELECT id, title, description, date::text, start_time::text, end_time::text, all_day, calendar, created_at, updated_at
 		FROM calendar_events
+		WHERE user_id = $1
 		ORDER BY date ASC, start_time ASC
 	`
-	rows, err := database.Pool.Query(ctx, query)
+	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
@@ -88,14 +90,14 @@ func (r *repository) List(ctx context.Context) ([]*models.CalendarEvent, error) 
 	return events, nil
 }
 
-func (r *repository) Get(ctx context.Context, id uuid.UUID) (*models.CalendarEvent, error) {
+func (r *repository) Get(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.CalendarEvent, error) {
 	query := `
 		SELECT id, title, description, date::text, start_time::text, end_time::text, all_day, calendar, created_at, updated_at
 		FROM calendar_events
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 	event := &models.CalendarEvent{}
-	err := database.Pool.QueryRow(ctx, query, id).Scan(
+	err := database.Pool.QueryRow(ctx, query, id, userID).Scan(
 		&event.ID,
 		&event.Title,
 		&event.Description,
@@ -113,11 +115,11 @@ func (r *repository) Get(ctx context.Context, id uuid.UUID) (*models.CalendarEve
 	return event, nil
 }
 
-func (r *repository) Update(ctx context.Context, event *models.CalendarEvent) error {
+func (r *repository) Update(ctx context.Context, userID uuid.UUID, event *models.CalendarEvent) error {
 	query := `
 		UPDATE calendar_events
 		SET title = $1, description = $2, date = $3, start_time = $4, end_time = $5, all_day = $6, calendar = $7, updated_at = $8
-		WHERE id = $9
+		WHERE id = $9 AND user_id = $10
 	`
 	event.UpdatedAt = time.Now()
 	_, err := database.Pool.Exec(ctx, query,
@@ -130,6 +132,7 @@ func (r *repository) Update(ctx context.Context, event *models.CalendarEvent) er
 		event.Calendar,
 		event.UpdatedAt,
 		event.ID,
+		userID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update event: %w", err)
@@ -137,9 +140,9 @@ func (r *repository) Update(ctx context.Context, event *models.CalendarEvent) er
 	return nil
 }
 
-func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM calendar_events WHERE id = $1`
-	_, err := database.Pool.Exec(ctx, query, id)
+func (r *repository) Delete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	query := `DELETE FROM calendar_events WHERE id = $1 AND user_id = $2`
+	_, err := database.Pool.Exec(ctx, query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete event: %w", err)
 	}

@@ -29,7 +29,14 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateEvent(c.Request.Context(), &event); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.CreateEvent(c.Request.Context(), userID, &event); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to create event"}})
 		return
 	}
@@ -38,7 +45,14 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) List(c *gin.Context) {
-	events, err := h.service.ListEvents(c.Request.Context())
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	events, err := h.service.ListEvents(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to fetch events"}})
 		return
@@ -65,7 +79,14 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateEvent(c.Request.Context(), id, updates); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.UpdateEvent(c.Request.Context(), userID, id, updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to update event"}})
 		return
 	}
@@ -81,7 +102,14 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteEvent(c.Request.Context(), id); err != nil {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Unauthorized"}})
+		return
+	}
+	userID := user.(*models.User).ID
+
+	if err := h.service.DeleteEvent(c.Request.Context(), userID, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "Failed to delete event"}})
 		return
 	}

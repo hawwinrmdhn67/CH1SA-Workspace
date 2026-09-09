@@ -2,12 +2,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(255) NOT NULL UNIQUE,
     display_name VARCHAR(255),
     password_hash VARCHAR(255) NOT NULL,
     recovery_code VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'user',
+    is_active BOOLEAN DEFAULT true,
+    must_change_password BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_users_username ON users(username);
 
 CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -18,6 +23,7 @@ CREATE TABLE sessions (
 
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'backlog',
@@ -27,6 +33,7 @@ CREATE TABLE tasks (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_priority ON tasks(priority);
 CREATE INDEX idx_tasks_start_date ON tasks(start_date);
@@ -35,6 +42,7 @@ CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 CREATE TABLE subtasks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     is_completed BOOLEAN DEFAULT false,
     position INTEGER DEFAULT 0,
@@ -42,9 +50,11 @@ CREATE TABLE subtasks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_subtasks_task_id ON subtasks(task_id);
+CREATE INDEX idx_subtasks_user_id ON subtasks(user_id);
 
 CREATE TABLE calendar_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     date DATE NOT NULL,
@@ -55,31 +65,37 @@ CREATE TABLE calendar_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_calendar_events_user_id ON calendar_events(user_id);
 CREATE INDEX idx_calendar_events_date ON calendar_events(date);
 CREATE INDEX idx_calendar_events_calendar ON calendar_events(calendar);
 
 CREATE TABLE notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     content TEXT,
     is_starred BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_notes_user_id ON notes(user_id);
 
 CREATE TABLE folders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     parent_folder_id UUID REFERENCES folders(id) ON DELETE CASCADE,
     is_starred BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_folders_user_id ON folders(user_id);
 CREATE INDEX idx_folders_parent_id ON folders(parent_folder_id);
 CREATE INDEX idx_folders_starred ON folders(is_starred);
 
 CREATE TABLE files (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     kind VARCHAR(50) NOT NULL,
     size BIGINT NOT NULL DEFAULT 0,
@@ -88,5 +104,6 @@ CREATE TABLE files (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_files_user_id ON files(user_id);
 CREATE INDEX idx_files_folder_id ON files(folder_id);
 CREATE INDEX idx_files_starred ON files(is_starred);

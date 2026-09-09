@@ -12,11 +12,11 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, task *models.Task) error
-	GetByID(ctx context.Context, id uuid.UUID) (*models.Task, error)
-	List(ctx context.Context) ([]*models.Task, error)
-	Update(ctx context.Context, task *models.Task) error
-	Delete(ctx context.Context, id uuid.UUID) error
+	Create(ctx context.Context, userID uuid.UUID, task *models.Task) error
+	GetByID(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Task, error)
+	List(ctx context.Context, userID uuid.UUID) ([]*models.Task, error)
+	Update(ctx context.Context, userID uuid.UUID, task *models.Task) error
+	Delete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error
 }
 
 type repository struct{}
@@ -25,7 +25,7 @@ func NewRepository() Repository {
 	return &repository{}
 }
 
-func (r *repository) Create(ctx context.Context, task *models.Task) error {
+func (r *repository) Create(ctx context.Context, userID uuid.UUID, task *models.Task) error {
 	tx, err := database.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -33,8 +33,8 @@ func (r *repository) Create(ctx context.Context, task *models.Task) error {
 	defer tx.Rollback(ctx)
 
 	query := `
-		INSERT INTO tasks (title, description, status, priority, start_date, due_date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO tasks (user_id, title, description, status, priority, start_date, due_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	now := time.Now()
@@ -42,6 +42,7 @@ func (r *repository) Create(ctx context.Context, task *models.Task) error {
 	task.UpdatedAt = now
 
 	err = tx.QueryRow(ctx, query,
+		userID,
 		task.Title,
 		task.Description,
 		task.Status,
@@ -59,13 +60,13 @@ func (r *repository) Create(ctx context.Context, task *models.Task) error {
 	if len(task.Subtasks) > 0 {
 		for i, st := range task.Subtasks {
 			stQuery := `
-				INSERT INTO subtasks (task_id, title, is_completed, position, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6)
+				INSERT INTO subtasks (user_id, task_id, title, is_completed, position, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)
 				RETURNING id
 			`
 			st.CreatedAt = now
 			st.UpdatedAt = now
-			err = tx.QueryRow(ctx, stQuery, task.ID, st.Title, st.IsCompleted, i, st.CreatedAt, st.UpdatedAt).Scan(&st.ID)
+			err = tx.QueryRow(ctx, stQuery, userID, task.ID, st.Title, st.IsCompleted, i, st.CreatedAt, st.UpdatedAt).Scan(&st.ID)
 			if err != nil {
 				return fmt.Errorf("failed to create subtask: %w", err)
 			}
@@ -83,14 +84,14 @@ func (r *repository) Create(ctx context.Context, task *models.Task) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Task, error) {
+func (r *repository) GetByID(ctx context.Context, userID uuid.UUID, id uuid.UUID) (*models.Task, error) {
 	query := `
 		SELECT id, title, description, status, priority, start_date::text, due_date::text, created_at, updated_at
 		FROM tasks
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 	task := &models.Task{}
-	err := database.Pool.QueryRow(ctx, query, id).Scan(
+	err := database.Pool.QueryRow(ctx, query, id, userID).Scan(
 		&task.ID,
 		&task.Title,
 		&task.Description,
@@ -105,8 +106,8 @@ func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Task, e
 		return nil, fmt.Errorf("failed to get task: %w", err)
 	}
 
-	stQuery := `SELECT id, task_id, title, is_completed, position, created_at, updated_at FROM subtasks WHERE task_id = $1 ORDER BY position ASC`
-	rows, err := database.Pool.Query(ctx, stQuery, id)
+	stQuery := `SELECT id, task_id, title, is_completed, position, created_at, updated_at FROM subtasks WHERE task_id = $1 AND user_id = $2 ORDER BY position ASC`
+	rows, err := database.Pool.Query(ctx, stQuery, id, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subtasks: %w", err)
 	}
@@ -124,13 +125,14 @@ func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Task, e
 	return task, nil
 }
 
-func (r *repository) List(ctx context.Context) ([]*models.Task, error) {
+func (r *repository) List(ctx context.Context, userID uuid.UUID) ([]*models.Task, error) {
 	query := `
 		SELECT id, title, description, status, priority, start_date::text, due_date::text, created_at, updated_at
 		FROM tasks
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`
-	rows, err := database.Pool.Query(ctx, query)
+	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tasks: %w", err)
 	}
@@ -162,8 +164,8 @@ func (r *repository) List(ctx context.Context) ([]*models.Task, error) {
 	rows.Close()
 
 	if len(tasks) > 0 {
-		stQuery := `SELECT id, task_id, title, is_completed, position, created_at, updated_at FROM subtasks ORDER BY task_id, position ASC`
-		stRows, err := database.Pool.Query(ctx, stQuery)
+		stQuery := `SELECT id, task_id, title, is_completed, position, created_at, updated_at FROM subtasks WHERE user_id = $1 ORDER BY task_id, position ASC`
+		stRows, err := database.Pool.Query(ctx, stQuery, userID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get subtasks: %w", err)
 		}
@@ -188,7 +190,7 @@ func (r *repository) List(ctx context.Context) ([]*models.Task, error) {
 	return tasks, nil
 }
 
-func (r *repository) Update(ctx context.Context, task *models.Task) error {
+func (r *repository) Update(ctx context.Context, userID uuid.UUID, task *models.Task) error {
 	tx, err := database.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -198,7 +200,7 @@ func (r *repository) Update(ctx context.Context, task *models.Task) error {
 	query := `
 		UPDATE tasks
 		SET title = $1, description = $2, status = $3, priority = $4, start_date = $5, due_date = $6, updated_at = $7
-		WHERE id = $8
+		WHERE id = $8 AND user_id = $9
 	`
 	task.UpdatedAt = time.Now()
 	_, err = tx.Exec(ctx, query,
@@ -210,26 +212,27 @@ func (r *repository) Update(ctx context.Context, task *models.Task) error {
 		task.DueDate,
 		task.UpdatedAt,
 		task.ID,
+		userID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update task: %w", err)
 	}
 
-	delQuery := `DELETE FROM subtasks WHERE task_id = $1`
-	if _, err := tx.Exec(ctx, delQuery, task.ID); err != nil {
+	delQuery := `DELETE FROM subtasks WHERE task_id = $1 AND user_id = $2`
+	if _, err := tx.Exec(ctx, delQuery, task.ID, userID); err != nil {
 		return fmt.Errorf("failed to clear subtasks: %w", err)
 	}
 
 	if len(task.Subtasks) > 0 {
 		for i, st := range task.Subtasks {
 			stQuery := `
-				INSERT INTO subtasks (task_id, title, is_completed, position, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6)
+				INSERT INTO subtasks (user_id, task_id, title, is_completed, position, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)
 				RETURNING id
 			`
 			st.CreatedAt = time.Now()
 			st.UpdatedAt = time.Now()
-			err = tx.QueryRow(ctx, stQuery, task.ID, st.Title, st.IsCompleted, i, st.CreatedAt, st.UpdatedAt).Scan(&st.ID)
+			err = tx.QueryRow(ctx, stQuery, userID, task.ID, st.Title, st.IsCompleted, i, st.CreatedAt, st.UpdatedAt).Scan(&st.ID)
 			if err != nil {
 				return fmt.Errorf("failed to insert subtask: %w", err)
 			}
@@ -245,9 +248,9 @@ func (r *repository) Update(ctx context.Context, task *models.Task) error {
 	return nil
 }
 
-func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM tasks WHERE id = $1`
-	_, err := database.Pool.Exec(ctx, query, id)
+func (r *repository) Delete(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
+	query := `DELETE FROM tasks WHERE id = $1 AND user_id = $2`
+	_, err := database.Pool.Exec(ctx, query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
 	}
