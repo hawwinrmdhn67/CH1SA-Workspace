@@ -4,10 +4,34 @@ import (
 	"context"
 	"net/http"
 
+	"encoding/json"
+
 	"chisa-assistant-backend/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
+
+func setupSSE(c *gin.Context) func(string) {
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("Transfer-Encoding", "chunked")
+
+	return func(text string) {
+		msg := map[string]string{"type": "chunk", "text": text}
+		b, _ := json.Marshal(msg)
+		c.Writer.Write([]byte("data: " + string(b) + "\n\n"))
+		c.Writer.Flush()
+	}
+}
+
+func sendFinalSSE(c *gin.Context, resp ChatResponse) {
+	msg := map[string]interface{}{"type": "final", "response": resp}
+	b, _ := json.Marshal(msg)
+	c.Writer.Write([]byte("data: " + string(b) + "\n\n"))
+	c.Writer.Write([]byte("data: [DONE]\n\n"))
+	c.Writer.Flush()
+}
 
 type Handler struct {
 	service *Service
@@ -37,13 +61,17 @@ func (h *Handler) HandleChat(c *gin.Context) {
 	userID := user.(*models.User).ID
 	ctx := context.WithValue(c.Request.Context(), "userID", userID)
 
-	resp, err := h.service.ProcessMessage(ctx, req)
+	onChunk := setupSSE(c)
+	resp, err := h.service.ProcessMessage(ctx, req, onChunk)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process message"})
+		msg := map[string]interface{}{"type": "error", "error": "Failed to process message"}
+		b, _ := json.Marshal(msg)
+		c.Writer.Write([]byte("data: " + string(b) + "\n\n"))
+		c.Writer.Flush()
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	sendFinalSSE(c, resp)
 }
 
 func (h *Handler) HandleConfirm(c *gin.Context) {
@@ -66,13 +94,17 @@ func (h *Handler) HandleConfirm(c *gin.Context) {
 	userID := user.(*models.User).ID
 	ctx := context.WithValue(c.Request.Context(), "userID", userID)
 
-	resp, err := h.service.ConfirmAction(ctx, req)
+	onChunk := setupSSE(c)
+	resp, err := h.service.ConfirmAction(ctx, req, onChunk)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to confirm action"})
+		msg := map[string]interface{}{"type": "error", "error": "Failed to confirm action"}
+		b, _ := json.Marshal(msg)
+		c.Writer.Write([]byte("data: " + string(b) + "\n\n"))
+		c.Writer.Flush()
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	sendFinalSSE(c, resp)
 }
 
 func (h *Handler) HandleToolResult(c *gin.Context) {
@@ -95,11 +127,15 @@ func (h *Handler) HandleToolResult(c *gin.Context) {
 	userID := user.(*models.User).ID
 	ctx := context.WithValue(c.Request.Context(), "userID", userID)
 
-	resp, err := h.service.ProcessToolResult(ctx, req)
+	onChunk := setupSSE(c)
+	resp, err := h.service.ProcessToolResult(ctx, req, onChunk)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process tool result"})
+		msg := map[string]interface{}{"type": "error", "error": "Failed to process tool result"}
+		b, _ := json.Marshal(msg)
+		c.Writer.Write([]byte("data: " + string(b) + "\n\n"))
+		c.Writer.Flush()
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	sendFinalSSE(c, resp)
 }

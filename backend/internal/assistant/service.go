@@ -3,7 +3,9 @@ package assistant
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -75,7 +77,7 @@ func (s *Service) getOrCreateSession(conversationID string) *ChatSession {
 	return session
 }
 
-func (s *Service) ProcessMessage(ctx context.Context, req ChatRequest) (ChatResponse, error) {
+func (s *Service) ProcessMessage(ctx context.Context, req ChatRequest, onChunk func(string)) (ChatResponse, error) {
 	session := s.getOrCreateSession(req.ConversationID)
 
 	s.mu.Lock()
@@ -100,10 +102,10 @@ func (s *Service) ProcessMessage(ctx context.Context, req ChatRequest) (ChatResp
 	reqID := uuid.New().String()
 	ctx = context.WithValue(ctx, requestIDKey, reqID)
 
-	return s.generateResponse(ctx, req.ConversationID, session)
+	return s.generateResponse(ctx, req.ConversationID, session, onChunk)
 }
 
-func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatResponse, error) {
+func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest, onChunk func(string)) (ChatResponse, error) {
 	session := s.getOrCreateSession(req.ConversationID)
 	
 	s.mu.Lock()
@@ -174,7 +176,7 @@ func (s *Service) ConfirmAction(ctx context.Context, req ConfirmRequest) (ChatRe
 	}, nil
 }
 
-func (s *Service) ProcessToolResult(ctx context.Context, req ToolResultRequest) (ChatResponse, error) {
+func (s *Service) ProcessToolResult(ctx context.Context, req ToolResultRequest, onChunk func(string)) (ChatResponse, error) {
 	session := s.getOrCreateSession(req.ConversationID)
 
 	s.mu.Lock()
@@ -205,7 +207,7 @@ func (s *Service) ProcessToolResult(ctx context.Context, req ToolResultRequest) 
 	reqID := uuid.New().String()
 	ctx = context.WithValue(ctx, requestIDKey, reqID)
 
-	return s.generateResponse(ctx, req.ConversationID, session)
+	return s.generateResponse(ctx, req.ConversationID, session, onChunk)
 }
 
 
@@ -232,7 +234,7 @@ func estimateTokens(messages []openai.ChatCompletionMessage, tools []openai.Tool
 	return size / 4
 }
 
-func (s *Service) generateResponse(ctx context.Context, conversationID string, session *ChatSession) (ChatResponse, error) {
+func (s *Service) generateResponse(ctx context.Context, conversationID string, session *ChatSession, onChunk func(string)) (ChatResponse, error) {
 	reqID, _ := ctx.Value(requestIDKey).(string)
 	startTime := time.Now()
 
@@ -285,40 +287,104 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		Tools:       tools,
 		Temperature: 0.2,
 		MaxTokens:   500,
+		Stream:      true,
 	}
 
-	var resp openai.ChatCompletionResponse
 	var err error
 	nineRouterCalls := 0
+	var fullMessage openai.ChatCompletionMessage
+	actualInputTokens := 0
+	actualOutputTokens := 0
+	totalTokens := 0
 
 	for attempts := 0; attempts < 2; attempts++ {
 		nineRouterCalls++
-		resp, err = s.client.CreateChatCompletion(ctx, req)
-		if err == nil {
+		stream, streamErr := s.client.CreateChatCompletionStream(ctx, req)
+		if streamErr != nil {
+			err = streamErr
+			if strings.Contains(err.Error(), "429") {
+				log.Printf("[Request %s] Rate limited (429). Waiting 5s before retry...", reqID)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			if strings.Contains(err.Error(), "413") && len(messages) > 3 {
+				log.Printf("[Request %s] 413 Error. Reducing context.", reqID)
+				compact := []openai.ChatCompletionMessage{messages[0]}
+				compact = append(compact, messages[len(messages)-2:]...)
+				req.Messages = compact
+				continue
+			}
 			break
 		}
-		
-		if strings.Contains(err.Error(), "429") {
-			log.Printf("[Request %s] Rate limited (429). Waiting 5s before retry...", reqID)
-			time.Sleep(5 * time.Second)
-			continue
+
+		fullMessage = openai.ChatCompletionMessage{Role: openai.ChatMessageRoleAssistant}
+		toolCallsMap := make(map[int]*openai.ToolCall)
+
+		for {
+			response, recvErr := stream.Recv()
+			if errors.Is(recvErr, io.EOF) {
+				break
+			}
+			if recvErr != nil {
+				err = recvErr
+				break
+			}
+
+			if len(response.Choices) > 0 {
+				delta := response.Choices[0].Delta
+				if delta.Content != "" {
+					fullMessage.Content += delta.Content
+					if onChunk != nil {
+						onChunk(delta.Content)
+					}
+				}
+
+				for _, tc := range delta.ToolCalls {
+					if tc.Index == nil {
+						continue
+					}
+					idx := *tc.Index
+					if toolCallsMap[idx] == nil {
+						toolCallsMap[idx] = &openai.ToolCall{
+							Index: tc.Index,
+						}
+					}
+					if tc.ID != "" {
+						toolCallsMap[idx].ID = tc.ID
+					}
+					if tc.Type != "" {
+						toolCallsMap[idx].Type = tc.Type
+					}
+					if tc.Function.Name != "" {
+						toolCallsMap[idx].Function.Name += tc.Function.Name
+					}
+					if tc.Function.Arguments != "" {
+						toolCallsMap[idx].Function.Arguments += tc.Function.Arguments
+					}
+				}
+			}
 		}
-		
-		if strings.Contains(err.Error(), "413") && len(messages) > 3 {
-			log.Printf("[Request %s] 413 Error. Reducing context.", reqID)
-			compact := []openai.ChatCompletionMessage{messages[0]}
-			compact = append(compact, messages[len(messages)-2:]...)
-			req.Messages = compact
-			continue
+		stream.Close()
+
+		if err == nil {
+			var sortedToolCalls []openai.ToolCall
+			for i := 0; i < len(toolCallsMap); i++ {
+				if tc, ok := toolCallsMap[i]; ok {
+					sortedToolCalls = append(sortedToolCalls, *tc)
+				}
+			}
+			if len(sortedToolCalls) > 0 {
+				fullMessage.ToolCalls = sortedToolCalls
+			}
+			break
 		}
-		break
 	}
 
 	duration := time.Since(startTime)
 
 	if err != nil {
 		log.Printf("[Request %s] Failed: %v, Duration: %v, EstTokens: %d", reqID, err, duration, estimatedInputTokens)
-		
+
 		if strings.Contains(err.Error(), "429") {
 			return ChatResponse{
 				Message: "CHISA sedang mencapai batas AI sementara. Coba lagi dalam beberapa detik.",
@@ -332,19 +398,14 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 		}, nil
 	}
 
-	actualInputTokens := resp.Usage.PromptTokens
-	actualOutputTokens := resp.Usage.CompletionTokens
-	totalTokens := resp.Usage.TotalTokens
-
-	log.Printf("[Request %s] Success - Duration: %v, Calls: %d, Input: %d, Output: %d, Total: %d", 
+	log.Printf("[Request %s] Success - Duration: %v, Calls: %d, Input: %d, Output: %d, Total: %d",
 		reqID, duration, nineRouterCalls, actualInputTokens, actualOutputTokens, totalTokens)
 
-	if len(resp.Choices) == 0 {
+	if fullMessage.Content == "" && len(fullMessage.ToolCalls) == 0 {
 		return ChatResponse{Message: "I'm not sure how to respond to that.", Status: "success"}, nil
 	}
 
-	choice := resp.Choices[0]
-	message := choice.Message
+	message := fullMessage
 
 	s.mu.Lock()
 	session.Messages = append(session.Messages, message)
@@ -372,7 +433,7 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 						ToolCallID: toolCall.ID,
 					})
 					s.mu.Unlock()
-					return s.generateResponse(ctx, conversationID, session)
+					return s.generateResponse(ctx, conversationID, session, onChunk)
 				}
 			}
 		}
@@ -401,7 +462,7 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 				ToolCallID: toolCall.ID,
 			})
 			s.mu.Unlock()
-			return s.generateResponse(ctx, conversationID, session)
+			return s.generateResponse(ctx, conversationID, session, onChunk)
 		}
 
 		pendingAction := &PendingAction{
@@ -454,7 +515,7 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 			})
 			s.mu.Unlock()
 
-			return s.generateResponse(ctx, conversationID, session)
+			return s.generateResponse(ctx, conversationID, session, onChunk)
 		}
 	}
 
