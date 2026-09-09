@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import { CircleUser, EllipsisVertical, LogOut } from "lucide-react";
+import Link from "next/link";
+
+import { CircleUser, EllipsisVertical, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getInitials } from "@/lib/utils";
 
 import { AccountSettingsDialog } from "../account-settings-dialog";
+import { UserProfileDialog } from "../user-profile-dialog";
 
 export function NavUser({
   user,
@@ -32,6 +35,7 @@ export function NavUser({
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
   return (
     <>
@@ -67,16 +71,20 @@ export function NavUser({
                     <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Hawwin Ramadhan</span>
-                    <span className="truncate text-muted-foreground text-xs">Workspace Owner</span>
+                    <span className="truncate font-medium">{user.name}</span>
+                    {user.role && <span className="truncate text-muted-foreground text-xs">{user.role}</span>}
                   </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={() => setAccountDialogOpen(true)}>
-                  <CircleUser />
-                  Account
+                <DropdownMenuItem onSelect={() => setProfileDialogOpen(true)} className="cursor-pointer">
+                  <Settings className="mr-2 size-4" />
+                  Account Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setAccountDialogOpen(true)} className="cursor-pointer">
+                  <CircleUser className="mr-2 size-4" />
+                  Recovery Codes
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
@@ -90,6 +98,7 @@ export function NavUser({
       </SidebarMenu>
 
       <AccountSettingsDialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen} />
+      <UserProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
     </>
   );
 }

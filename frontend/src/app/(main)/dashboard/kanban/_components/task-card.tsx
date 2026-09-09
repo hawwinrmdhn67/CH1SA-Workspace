@@ -154,7 +154,7 @@ export function TaskCard({
   const StateIcon = activeState && stateConfig[activeState] ? stateConfig[activeState].icon : Circle;
   const stateLabel = activeState && stateConfig[activeState] ? stateConfig[activeState].label : "To Do";
 
-  const hasBottomContent = (task.subtasks && task.subtasks.length > 0) || task.insights.length > 0;
+  const hasBottomContent = (task.subtasks && task.subtasks.length > 0) || (task.insights && task.insights.length > 0);
 
   const renderProperties = () => (
     <TooltipProvider delayDuration={300}>
@@ -472,7 +472,7 @@ export function TaskCard({
                   {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
                 </span>
               )}
-              {task.insights.map((insight) => {
+              {task.insights?.map((insight) => {
                 const Icon = taskInsightIcons[insight.label];
 
                 return (

@@ -13,7 +13,6 @@ import { FloatingAssistant } from "./_components/floating-assistant";
 import { LayoutControls } from "./_components/header/layout-controls";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
-import { RecoverySetupDialog } from "./_components/recovery-setup-dialog";
 import { NotesProvider } from "./notes/_components/use-notes";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -71,7 +70,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden p-4 has-data-[content-padding=false]:p-0 md:p-6 md:has-data-[content-padding=false]:p-0">
               {children}
             </div>
-            <RecoverySetupDialog />
             <FloatingAssistant />
           </SidebarInset>
         </SidebarProvider>

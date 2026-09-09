@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { useAuth } from "@/hooks/use-auth";
+
 export function Greeting() {
+  const { user } = useAuth();
   const [greeting, setGreeting] = useState("Good morning");
 
   useEffect(() => {
@@ -18,5 +21,7 @@ export function Greeting() {
     }
   }, []);
 
-  return <h1 className="text-3xl leading-none tracking-tight">{greeting}, Hawwin.</h1>;
+  const name = user?.displayName || user?.username || "User";
+
+  return <h1 className="text-3xl leading-none tracking-tight">{greeting}, {name}.</h1>;
 }

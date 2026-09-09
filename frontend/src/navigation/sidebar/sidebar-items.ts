@@ -1,4 +1,4 @@
-import { Calendar, CheckSquare, FileText, FolderOpen, Kanban, ListTodo, type LucideIcon, Sparkles } from "lucide-react";
+import { Calendar, CheckSquare, FileText, FolderOpen, Kanban, ListTodo, type LucideIcon, Settings, ShieldAlert, Sparkles, Users } from "lucide-react";
 
 export type NavBadge = "new" | "soon";
 
@@ -78,6 +78,19 @@ export const sidebarItems: NavGroup[] = [
         title: "File Manager",
         url: "/dashboard/file-manager",
         icon: FolderOpen,
+      },
+    ],
+  },
+
+  {
+    id: 4,
+    label: "Admin",
+    items: [
+      {
+        id: "admin-users",
+        title: "User Management",
+        url: "/dashboard/admin/users",
+        icon: Users,
       },
     ],
   },

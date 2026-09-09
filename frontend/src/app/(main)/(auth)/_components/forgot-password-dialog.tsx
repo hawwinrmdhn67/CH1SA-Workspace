@@ -22,7 +22,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
-import { resetPassword } from "@/lib/api/auth";
+import { resetPassword, verifyRecoveryCode } from "@/lib/api/auth";
 import { verifyRecoveryCodeFormat } from "@/lib/recovery";
 
 interface ForgotPasswordDialogProps {
@@ -48,6 +48,7 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
   const router = useRouter();
   const [step, setStep] = useState<"verify" | "reset">("verify");
   const [isLoading, setIsLoading] = useState(false);
+  const [verifiedUsername, setVerifiedUsername] = useState<string>("");
   const { logout } = useAuth();
 
   const verifyForm = useForm<z.infer<typeof verifySchema>>({
@@ -60,21 +61,28 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
     defaultValues: { password: "", confirmPassword: "" },
   });
 
-  const onVerifySubmit = (data: z.infer<typeof verifySchema>) => {
+  const onVerifySubmit = async (data: z.infer<typeof verifySchema>) => {
     if (!verifyRecoveryCodeFormat(data.recoveryCode)) {
-      setIsLoading(false);
       verifyForm.setError("recoveryCode", { message: "Invalid recovery code format." });
       return;
     }
 
-    setIsLoading(false);
-    setStep("reset");
+    setIsLoading(true);
+    try {
+      const username = await verifyRecoveryCode(data.recoveryCode);
+      setVerifiedUsername(username);
+      setStep("reset");
+    } catch (e: any) {
+      verifyForm.setError("recoveryCode", { message: e.message || "Invalid recovery code." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   async function onResetSubmit(data: z.infer<typeof resetSchema>) {
     setIsLoading(true);
     try {
-      await resetPassword(verifyForm.getValues().recoveryCode, data.password);
+      await resetPassword(verifiedUsername, verifyForm.getValues().recoveryCode, data.password);
       
       setIsLoading(false);
       toast.success("Password reset successfully");
@@ -93,6 +101,7 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
     onOpenChange(false);
     setTimeout(() => {
       setStep("verify");
+      setVerifiedUsername("");
       verifyForm.reset();
       resetForm.reset();
     }, 300);
@@ -147,6 +156,10 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
               onSubmit={resetForm.handleSubmit(onResetSubmit)}
               className="flex flex-col gap-4 py-4"
             >
+              <div className="bg-muted p-3 rounded-md mb-2">
+                <p className="text-sm font-medium">Resetting password for:</p>
+                <p className="text-lg font-bold">{verifiedUsername}</p>
+              </div>
               <Controller
                 control={resetForm.control}
                 name="password"

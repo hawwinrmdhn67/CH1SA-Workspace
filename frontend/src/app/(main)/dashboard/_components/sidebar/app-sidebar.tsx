@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { rootUser } from "@/data/users";
+import { useAuth } from "@/hooks/use-auth";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -30,8 +30,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     })),
   );
 
+  const { user } = useAuth();
+  
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
+
+  const filteredItems = sidebarItems.map((group) => {
+    return {
+      ...group,
+      items: group.items.filter((item) => {
+        if (item.id === "file-manager") {
+          return user?.role === "admin";
+        }
+        return true;
+      })
+    };
+  }).filter((group) => {
+    if (group.label === "Admin") {
+      return user?.role === "admin";
+    }
+    return group.items.length > 0;
+  });
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
@@ -53,10 +72,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={filteredItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={rootUser} />
+        <NavUser user={{ name: user?.username || "User", avatar: "", role: user?.role === "admin" ? "Workspace Owner" : "User" }} />
       </SidebarFooter>
     </Sidebar>
   );

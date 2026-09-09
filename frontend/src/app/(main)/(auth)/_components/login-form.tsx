@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 const formSchema = z.object({
+  username: z.string().min(1, { message: "Username is required." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -28,16 +29,17 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      username: "",
       password: "",
     },
   });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     try {
-      await login(data.password);
+      await login(data.username, data.password);
       router.replace("/dashboard/productivity");
     } catch (e: any) {
-      form.setError("password", { message: e.message || "Invalid password." });
+      form.setError("password", { message: e.message || "Invalid username or password." });
     }
   }
 
@@ -45,6 +47,24 @@ export function LoginForm() {
     <>
       <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <FieldGroup className="gap-4">
+          <Controller
+            control={form.control}
+            name="username"
+            render={({ field, fieldState }) => (
+              <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="login-username">Username</FieldLabel>
+                <Input
+                  {...field}
+                  id="login-username"
+                  type="text"
+                  placeholder="Enter your username"
+                  autoComplete="username"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
           <Controller
             control={form.control}
             name="password"
