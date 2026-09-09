@@ -184,6 +184,7 @@ func main() {
 	}
 
 	assistantRoutes := api.Group("/assistant")
+	assistantRoutes.Use(auth_middleware.RequireAuth(authService))
 	{
 		assistantRoutes.POST("/chat", assistantHandler.HandleChat)
 		assistantRoutes.POST("/confirm", assistantHandler.HandleConfirm)
