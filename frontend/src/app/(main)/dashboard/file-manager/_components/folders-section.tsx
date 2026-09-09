@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -97,6 +98,9 @@ export function FoldersSection({ folders, view }: FoldersSectionProps) {
                             >
                               Rename
                             </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuGroup>
                             <DropdownMenuItem
                               variant="destructive"
                               onSelect={() => setModalState({ type: "delete", itemType: "folder", itemId: folder.id })}
@@ -130,7 +134,9 @@ export function FoldersSection({ folders, view }: FoldersSectionProps) {
                     <Folder className="size-4.5" />
                   </div>
                   <div className="flex min-w-0 flex-col gap-1">
-                    <CardTitle className="truncate leading-none">{folder.name}</CardTitle>
+                    <CardTitle className="truncate leading-none" title={folder.name}>
+                      {folder.name}
+                    </CardTitle>
                     <CardDescription className="text-xs">{folder.fileCount} files</CardDescription>
                   </div>
                 </div>
@@ -176,6 +182,9 @@ export function FoldersSection({ folders, view }: FoldersSectionProps) {
                             >
                               Rename
                             </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuGroup>
                             <DropdownMenuItem
                               variant="destructive"
                               onSelect={() => setModalState({ type: "delete", itemType: "folder", itemId: folder.id })}

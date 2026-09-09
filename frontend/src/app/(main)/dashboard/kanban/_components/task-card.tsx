@@ -62,7 +62,7 @@ export const stateConfig: Record<string, { icon: LucideIcon; label: string; colo
     colorClass: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
   },
   done: { icon: CheckCircle2, label: "Done", colorClass: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400" },
-  cancelled: { icon: Ban, label: "Canceled", colorClass: "text-slate-500 bg-slate-500/10 dark:text-slate-400" },
+  cancelled: { icon: Ban, label: "Canceled", colorClass: "text-red-600 bg-red-500/10 dark:text-red-400" },
 };
 
 export const priorityBadgeConfig: Record<
