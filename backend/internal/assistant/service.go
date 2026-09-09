@@ -39,14 +39,14 @@ type Service struct {
 }
 
 func NewService(cfg *config.Config, taskService tasks.Service, calendarService calendar.Service, notesService notes.Service, filesService files.Service) (*Service, error) {
-	clientConfig := openai.DefaultConfig(cfg.GroqAPIKey)
-	clientConfig.BaseURL = "https://api.groq.com/openai/v1"
+	clientConfig := openai.DefaultConfig(cfg.NineRouterAPIKey)
+	clientConfig.BaseURL = cfg.NineRouterBaseURL
 
 	client := openai.NewClientWithConfig(clientConfig)
 
 	return &Service{
 		client:         client,
-		model:          cfg.GroqModel,
+		model:          cfg.NineRouterModel,
 		router:         NewRouter(taskService, calendarService, notesService, filesService),
 		sessions:       make(map[string]*ChatSession),
 		pendingActions: make(map[string]*StoredAction),
@@ -289,10 +289,10 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 
 	var resp openai.ChatCompletionResponse
 	var err error
-	groqCalls := 0
+	nineRouterCalls := 0
 
 	for attempts := 0; attempts < 2; attempts++ {
-		groqCalls++
+		nineRouterCalls++
 		resp, err = s.client.CreateChatCompletion(ctx, req)
 		if err == nil {
 			break
@@ -337,7 +337,7 @@ func (s *Service) generateResponse(ctx context.Context, conversationID string, s
 	totalTokens := resp.Usage.TotalTokens
 
 	log.Printf("[Request %s] Success - Duration: %v, Calls: %d, Input: %d, Output: %d, Total: %d", 
-		reqID, duration, groqCalls, actualInputTokens, actualOutputTokens, totalTokens)
+		reqID, duration, nineRouterCalls, actualInputTokens, actualOutputTokens, totalTokens)
 
 	if len(resp.Choices) == 0 {
 		return ChatResponse{Message: "I'm not sure how to respond to that.", Status: "success"}, nil

@@ -23,8 +23,8 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	if cfg.GroqAPIKey == "" {
-		log.Fatal("GROQ_API_KEY environment variable is required")
+	if cfg.NineRouterAPIKey == "" {
+		log.Fatal("NINEROUTER_API_KEY environment variable is required")
 	}
 
 	if err := database.InitDB(); err != nil {

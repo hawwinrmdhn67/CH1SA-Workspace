@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	Port          string
-	GroqAPIKey    string
-	GroqModel     string
-	CORSOrigins   string
+	Port              string
+	NineRouterAPIKey  string
+	NineRouterModel   string
+	NineRouterBaseURL string
+	CORSOrigins       string
 }
 
 func LoadConfig() *Config {
@@ -20,10 +21,11 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Port:          getEnv("PORT", "8080"),
-		GroqAPIKey:    getEnv("GROQ_API_KEY", ""),
-		GroqModel:     getEnv("GROQ_MODEL", "openai/gpt-oss-120b"),
-		CORSOrigins:   getEnv("CORS_ORIGINS", "http://localhost:3000"),
+		Port:              getEnv("PORT", "8080"),
+		NineRouterAPIKey:  getEnv("NINEROUTER_API_KEY", ""),
+		NineRouterModel:   getEnv("NINEROUTER_MODEL", "my-combo"),
+		NineRouterBaseURL: getEnv("NINEROUTER_BASE_URL", "http://localhost:20128/v1"),
+		CORSOrigins:       getEnv("CORS_ORIGINS", "http://localhost:3000"),
 	}
 }
 
