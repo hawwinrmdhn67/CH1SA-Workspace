@@ -33,10 +33,10 @@ func NewRepository() Repository {
 }
 
 func (r *repository) GetFirstUser(ctx context.Context) (*models.User, error) {
-	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users LIMIT 1`
+	query := `SELECT id, username, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users LIMIT 1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query).Scan(
-		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -45,10 +45,10 @@ func (r *repository) GetFirstUser(ctx context.Context) (*models.User, error) {
 }
 
 func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
-	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE id = $1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -57,10 +57,10 @@ func (r *repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.Use
 }
 
 func (r *repository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE username = $1`
+	query := `SELECT id, username, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE username = $1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query, username).Scan(
-		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -69,10 +69,10 @@ func (r *repository) GetUserByUsername(ctx context.Context, username string) (*m
 }
 
 func (r *repository) GetUserByRecoveryCode(ctx context.Context, recoveryCode string) (*models.User, error) {
-	query := `SELECT id, username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE REPLACE(UPPER(recovery_code), '-', '') = $1`
+	query := `SELECT id, username, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at FROM users WHERE REPLACE(UPPER(recovery_code), '-', '') = $1`
 	user := &models.User{}
 	err := database.Pool.QueryRow(ctx, query, recoveryCode).Scan(
-		&user.ID, &user.Username, &user.DisplayName, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Username, &user.PasswordHash, &user.RecoveryCode, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -82,15 +82,15 @@ func (r *repository) GetUserByRecoveryCode(ctx context.Context, recoveryCode str
 
 func (r *repository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (username, display_name, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO users (username, password_hash, recovery_code, role, is_active, must_change_password, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 	`
 	now := time.Now()
 	user.CreatedAt = now
 	user.UpdatedAt = now
 
-	err := database.Pool.QueryRow(ctx, query, user.Username, user.DisplayName, user.PasswordHash, user.RecoveryCode, user.Role, user.IsActive, user.MustChangePassword, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+	err := database.Pool.QueryRow(ctx, query, user.Username, user.PasswordHash, user.RecoveryCode, user.Role, user.IsActive, user.MustChangePassword, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}

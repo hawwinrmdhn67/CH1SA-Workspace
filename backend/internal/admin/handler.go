@@ -25,10 +25,9 @@ func (h *Handler) ListUsers(c *gin.Context) {
 }
 
 type CreateUserRequest struct {
-	Username    string `json:"username"`
-	DisplayName string `json:"displayName"`
-	Password    string `json:"password"`
-	Role        string `json:"role"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 func (h *Handler) CreateUser(c *gin.Context) {
@@ -38,7 +37,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateUser(c.Request.Context(), req.Username, req.DisplayName, req.Password, req.Role); err != nil {
+	if err := h.service.CreateUser(c.Request.Context(), req.Username, req.Password, req.Role); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error()}})
 		return
 	}
@@ -47,9 +46,9 @@ func (h *Handler) CreateUser(c *gin.Context) {
 }
 
 type UpdateUserRequest struct {
-	DisplayName string `json:"displayName"`
-	Role        string `json:"role"`
-	IsActive    bool   `json:"isActive"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	IsActive bool   `json:"isActive"`
 }
 
 func (h *Handler) UpdateUser(c *gin.Context) {
@@ -66,7 +65,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateUser(c.Request.Context(), userID, req.DisplayName, req.Role, req.IsActive); err != nil {
+	if err := h.service.UpdateUser(c.Request.Context(), userID, req.Username, req.Role, req.IsActive); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error()}})
 		return
 	}

@@ -23,7 +23,7 @@ import { User, useAuth } from "@/hooks/use-auth";
 import { createUser, deleteUser, listUsers, resetUserPassword, updateUser } from "@/lib/api/admin";
 
 export default function UserManagementPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, checkAuth } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +34,7 @@ export default function UserManagementPage() {
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const [formData, setFormData] = useState({ username: "", role: "user", isActive: true, password: "", mustChangePassword: true });
+  const [formData, setFormData] = useState({ username: "", role: "user", isActive: true, password: "", mustChangePassword: false });
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -93,6 +93,9 @@ export default function UserManagementPage() {
       toast.success("User updated successfully");
       setIsEditOpen(false);
       fetchUsers();
+      if (currentUser?.id === selectedUser.id) {
+        checkAuth();
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to update user.");
     }
@@ -115,7 +118,7 @@ export default function UserManagementPage() {
     try {
       await resetUserPassword(selectedUser.id, {
         password: formData.password,
-        mustChangePassword: formData.mustChangePassword,
+        mustChangePassword: false,
       });
       toast.success("Password reset successfully");
       setIsResetOpen(false);
@@ -125,13 +128,19 @@ export default function UserManagementPage() {
   };
 
   const openCreateDialog = () => {
-    setFormData({ username: "", role: "user", isActive: true, password: "", mustChangePassword: true });
+    setFormData({ username: "", role: "user", isActive: true, password: "", mustChangePassword: false });
     setIsCreateOpen(true);
   };
 
   const openEditDialog = (u: User) => {
     setSelectedUser(u);
-    setFormData({ username: u.username, role: u.role, isActive: u.isActive, password: "", mustChangePassword: u.mustChangePassword ?? false });
+    setFormData({
+      username: u.username,
+      role: u.role,
+      isActive: u.isActive,
+      password: "",
+      mustChangePassword: false,
+    });
     setIsEditOpen(true);
   };
 
@@ -142,7 +151,7 @@ export default function UserManagementPage() {
 
   const openResetDialog = (u: User) => {
     setSelectedUser(u);
-    setFormData((prev) => ({ ...prev, password: "", mustChangePassword: true }));
+    setFormData((prev) => ({ ...prev, password: "", mustChangePassword: false }));
     setIsResetOpen(true);
   };
 
@@ -168,77 +177,77 @@ export default function UserManagementPage() {
                 <TableHead className="h-11 font-medium text-muted-foreground">Role</TableHead>
                 <TableHead className="h-11 font-medium text-muted-foreground">Status</TableHead>
                 <TableHead className="w-[70px] h-11 font-medium text-muted-foreground"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow className="border-border/60">
-                <TableCell colSpan={4} className="h-24 text-center py-3 align-middle text-muted-foreground">
-                  Loading users...
-                </TableCell>
               </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow className="border-border/60">
-                <TableCell colSpan={4} className="h-24 text-center py-3 align-middle text-muted-foreground">
-                  No users found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((u) => (
-                <TableRow key={u.id} className="border-border/60 hover:bg-muted/20">
-                  <TableCell className="font-medium py-3 align-middle">{u.username}</TableCell>
-                  <TableCell className="capitalize py-3 align-middle">{u.role}</TableCell>
-                  <TableCell className="py-3 align-middle">
-                    {u.isActive ? (
-                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-green-500">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive">
-                        Inactive
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-3 align-middle">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <EllipsisVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => openEditDialog(u)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openResetDialog(u)}>
-                          <Key className="mr-2 h-4 w-4" />
-                          Reset Password
-                        </DropdownMenuItem>
-                        {currentUser.id !== u.id && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(u)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow className="border-border/60">
+                  <TableCell colSpan={4} className="h-24 text-center py-3 align-middle text-muted-foreground">
+                    Loading users...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : users.length === 0 ? (
+                <TableRow className="border-border/60">
+                  <TableCell colSpan={4} className="h-24 text-center py-3 align-middle text-muted-foreground">
+                    No users found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((u) => (
+                  <TableRow key={u.id} className="border-border/60 hover:bg-muted/20">
+                    <TableCell className="font-medium py-3 align-middle">{u.username}</TableCell>
+                    <TableCell className="capitalize py-3 align-middle">{u.role}</TableCell>
+                    <TableCell className="py-3 align-middle">
+                      {u.isActive ? (
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-green-500">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive">
+                          Inactive
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3 align-middle">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <EllipsisVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => openEditDialog(u)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetDialog(u)}>
+                            <Key className="mr-2 h-4 w-4" />
+                            Reset Password
+                          </DropdownMenuItem>
+                          {currentUser.id !== u.id && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(u)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      {}
+      { }
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -285,7 +294,7 @@ export default function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {}
+      { }
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
@@ -338,7 +347,7 @@ export default function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {}
+      { }
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
         <DialogContent>
           <DialogHeader>
@@ -357,21 +366,6 @@ export default function UserManagementPage() {
                 placeholder="Enter new password"
               />
             </Field>
-            <Field>
-              <FieldLabel>Require change on next login</FieldLabel>
-              <Select
-                value={formData.mustChangePassword ? "yes" : "no"}
-                onValueChange={(val) => setFormData({ ...formData, mustChangePassword: val === "yes" })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">Yes</SelectItem>
-                  <SelectItem value="no">No</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsResetOpen(false)}>
@@ -382,7 +376,7 @@ export default function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {}
+      { }
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>

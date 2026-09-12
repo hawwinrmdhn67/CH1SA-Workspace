@@ -13,7 +13,8 @@ import (
 
 type Repository interface {
 	ListUsers(ctx context.Context) ([]*models.User, error)
-	UpdateUser(ctx context.Context, userID uuid.UUID, displayName, role string, isActive bool) error
+	CheckUsernameExists(ctx context.Context, username string, excludeUserID uuid.UUID) (bool, error)
+	UpdateUser(ctx context.Context, userID uuid.UUID, username, role string, isActive bool) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	CountActiveAdmins(ctx context.Context) (int, error)
 }
@@ -25,7 +26,7 @@ func NewRepository() Repository {
 }
 
 func (r *repository) ListUsers(ctx context.Context) ([]*models.User, error) {
-	query := `SELECT id, username, display_name, role, is_active, must_change_password, created_at, updated_at FROM users ORDER BY created_at ASC`
+	query := `SELECT id, username, role, is_active, must_change_password, created_at, updated_at FROM users ORDER BY created_at ASC`
 	rows, err := database.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -35,7 +36,7 @@ func (r *repository) ListUsers(ctx context.Context) ([]*models.User, error) {
 	var users []*models.User
 	for rows.Next() {
 		user := &models.User{}
-		if err := rows.Scan(&user.ID, &user.Username, &user.DisplayName, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.Role, &user.IsActive, &user.MustChangePassword, &user.CreatedAt, &user.UpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -43,9 +44,19 @@ func (r *repository) ListUsers(ctx context.Context) ([]*models.User, error) {
 	return users, nil
 }
 
-func (r *repository) UpdateUser(ctx context.Context, userID uuid.UUID, displayName, role string, isActive bool) error {
-	query := `UPDATE users SET display_name = $1, role = $2, is_active = $3, updated_at = $4 WHERE id = $5`
-	_, err := database.Pool.Exec(ctx, query, displayName, role, isActive, time.Now(), userID)
+func (r *repository) CheckUsernameExists(ctx context.Context, username string, excludeUserID uuid.UUID) (bool, error) {
+	query := `SELECT count(*) FROM users WHERE username = $1 AND id != $2`
+	var count int
+	err := database.Pool.QueryRow(ctx, query, username, excludeUserID).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check username: %w", err)
+	}
+	return count > 0, nil
+}
+
+func (r *repository) UpdateUser(ctx context.Context, userID uuid.UUID, username, role string, isActive bool) error {
+	query := `UPDATE users SET username = $1, role = $2, is_active = $3, updated_at = $4 WHERE id = $5`
+	_, err := database.Pool.Exec(ctx, query, username, role, isActive, time.Now(), userID)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}

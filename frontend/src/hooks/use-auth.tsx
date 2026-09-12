@@ -9,7 +9,6 @@ import { checkAuth as checkAuthApi, login as loginApi, logout as logoutApi } fro
 export interface User {
   id: string;
   username: string;
-  displayName: string;
   role: string;
   isActive: boolean;
   mustChangePassword?: boolean;
@@ -42,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user: User = {
         id: response.id,
         username: response.username,
-        displayName: response.display_name,
         role: response.role,
         isActive: response.is_active,
         mustChangePassword: response.must_change_password,

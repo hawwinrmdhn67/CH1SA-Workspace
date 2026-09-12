@@ -28,11 +28,10 @@ func main() {
 	}
 
 	if err := database.InitDB(); err != nil {
-		log.Printf("Warning: Failed to initialize database: %v", err)
-	} else {
-		log.Println("Successfully connected to PostgreSQL")
-		defer database.CloseDB()
+		log.Fatalf("Failed to initialize database: %v", err)
 	}
+	log.Println("Successfully connected to PostgreSQL")
+	defer database.CloseDB()
 
 	taskRepo := tasks.NewRepository()
 	taskService := tasks.NewService(taskRepo)

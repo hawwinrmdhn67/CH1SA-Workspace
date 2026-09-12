@@ -17,7 +17,7 @@ type Service interface {
 	Login(ctx context.Context, username, password string) (*models.Session, error)
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 	ValidateSession(ctx context.Context, sessionID uuid.UUID) (*models.User, error)
-	Register(ctx context.Context, username, displayName, password, role string, mustChangePassword bool) error
+	Register(ctx context.Context, username, password, role string, mustChangePassword bool) error
 	ResetPassword(ctx context.Context, username, recoveryCode, newPassword string) error
 	GetRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error)
 	RegenerateRecoveryCode(ctx context.Context, userID uuid.UUID) (string, error)
@@ -67,7 +67,7 @@ func isBuggyOldCode(code string) bool {
 	return true
 }
 
-func (s *service) Register(ctx context.Context, username, displayName, password, role string, mustChangePassword bool) error {
+func (s *service) Register(ctx context.Context, username, password, role string, mustChangePassword bool) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -77,7 +77,6 @@ func (s *service) Register(ctx context.Context, username, displayName, password,
 
 	user := &models.User{
 		Username:           username,
-		DisplayName:        displayName,
 		PasswordHash:       string(hash),
 		RecoveryCode:       &code,
 		Role:               role,
@@ -162,7 +161,7 @@ func (s *service) Login(ctx context.Context, username, password string) (*models
 		if username == "admin" {
 			_, checkErr := s.repo.GetFirstUser(ctx)
 			if checkErr != nil {
-				if err := s.Register(ctx, "admin", "Admin", "admin123", "admin", false); err != nil {
+				if err := s.Register(ctx, "admin", "admin123", "admin", false); err != nil {
 					return nil, errors.New("failed to initialize workspace user")
 				}
 				user, _ = s.repo.GetUserByUsername(ctx, "admin")

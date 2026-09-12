@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"chisa-assistant-backend/internal/auth"
 	"chisa-assistant-backend/internal/models"
@@ -12,8 +13,8 @@ import (
 
 type Service interface {
 	ListUsers(ctx context.Context) ([]*models.User, error)
-	CreateUser(ctx context.Context, username, displayName, password, role string) error
-	UpdateUser(ctx context.Context, targetUserID uuid.UUID, displayName, role string, isActive bool) error
+	CreateUser(ctx context.Context, username, password, role string) error
+	UpdateUser(ctx context.Context, targetUserID uuid.UUID, username, role string, isActive bool) error
 	DeleteUser(ctx context.Context, targetUserID uuid.UUID) error
 	ForceResetPassword(ctx context.Context, targetUserID uuid.UUID, newPassword string, mustChangePassword bool) error
 }
@@ -31,19 +32,33 @@ func (s *service) ListUsers(ctx context.Context) ([]*models.User, error) {
 	return s.repo.ListUsers(ctx)
 }
 
-func (s *service) CreateUser(ctx context.Context, username, displayName, password, role string) error {
+func (s *service) CreateUser(ctx context.Context, username, password, role string) error {
 	// Ensure roles are valid
 	if role != "admin" && role != "user" {
 		return errors.New("invalid role")
 	}
 	
-	// Create user via auth service, with mustChangePassword = true
-	return s.authService.Register(ctx, username, displayName, password, role, true)
+	// Create user via auth service, with mustChangePassword = false
+	return s.authService.Register(ctx, username, password, role, false)
 }
 
-func (s *service) UpdateUser(ctx context.Context, targetUserID uuid.UUID, displayName, role string, isActive bool) error {
+func (s *service) UpdateUser(ctx context.Context, targetUserID uuid.UUID, username, role string, isActive bool) error {
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" {
+		return errors.New("username cannot be empty")
+	}
+
 	if role != "admin" && role != "user" {
 		return errors.New("invalid role")
+	}
+
+	// Check if username is already in use by another user
+	exists, err := s.repo.CheckUsernameExists(ctx, username, targetUserID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return errors.New("username is already in use")
 	}
 
 	// Prevent removing the last active admin
@@ -66,7 +81,7 @@ func (s *service) UpdateUser(ctx context.Context, targetUserID uuid.UUID, displa
 		}
 	}
 
-	return s.repo.UpdateUser(ctx, targetUserID, displayName, role, isActive)
+	return s.repo.UpdateUser(ctx, targetUserID, username, role, isActive)
 }
 
 func (s *service) DeleteUser(ctx context.Context, targetUserID uuid.UUID) error {

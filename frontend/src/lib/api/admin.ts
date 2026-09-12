@@ -8,7 +8,6 @@ export async function listUsers(): Promise<User[]> {
   return response.map((u: any) => ({
     id: u.id,
     username: u.username,
-    displayName: u.display_name,
     role: u.role,
     isActive: u.is_active,
     mustChangePassword: u.must_change_password,

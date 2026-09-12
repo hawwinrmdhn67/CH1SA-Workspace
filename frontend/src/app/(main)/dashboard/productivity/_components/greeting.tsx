@@ -21,7 +21,7 @@ export function Greeting() {
     }
   }, []);
 
-  const name = user?.displayName || user?.username || "User";
+  const name = user?.username || "User";
 
   return <h1 className="text-3xl leading-none tracking-tight">{greeting}, {name}.</h1>;
 }

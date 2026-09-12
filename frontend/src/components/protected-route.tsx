@@ -16,8 +16,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isAuthenticated === false) {
       router.push("/login");
-    } else if (isAuthenticated === true && user?.mustChangePassword && pathname !== "/force-change-password") {
-      router.push("/force-change-password");
     }
   }, [isAuthenticated, user, pathname, router]);
 
@@ -29,13 +27,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user?.mustChangePassword && pathname !== "/force-change-password") {
-    return (
-      <div className="flex h-dvh w-full items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+
 
   return <>{children}</>;
 }
