@@ -1,17 +1,20 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port              string
-	NineRouterAPIKey  string
-	NineRouterModel   string
-	NineRouterBaseURL string
-	CORSOrigins       string
+	AppEnv               string
+	Port                 string
+	NineRouterAPIKey     string
+	NineRouterModel      string
+	NineRouterBaseURL    string
+	CORSOrigins          string
+	AdminDefaultPassword string
 }
 
 func LoadConfig() *Config {
@@ -21,11 +24,13 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Port:              getEnv("PORT", "8080"),
-		NineRouterAPIKey:  getEnv("NINEROUTER_API_KEY", ""),
-		NineRouterModel:   getEnv("NINEROUTER_MODEL", "my-combo"),
-		NineRouterBaseURL: getEnv("NINEROUTER_BASE_URL", "http://localhost:20128/v1"),
-		CORSOrigins:       getEnv("CORS_ORIGINS", "http://localhost:3000"),
+		AppEnv:               getEnv("APP_ENV", "development"),
+		Port:                 getEnv("PORT", "8080"),
+		NineRouterAPIKey:     getEnv("NINEROUTER_API_KEY", ""),
+		NineRouterModel:      getEnv("NINEROUTER_MODEL", "my-combo"),
+		NineRouterBaseURL:    getEnv("NINEROUTER_BASE_URL", "http://localhost:20128/v1"),
+		CORSOrigins:          getEnv("CORS_ORIGINS", "http://localhost:3000"),
+		AdminDefaultPassword: getEnv("ADMIN_DEFAULT_PASSWORD", "admin123"),
 	}
 }
 

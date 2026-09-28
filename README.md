@@ -40,13 +40,13 @@ Built to be a minimal and flexible alternative to cluttered dashboards, CH1SA fo
 - **Framework**: Gin Web Framework
 - **Database**: PostgreSQL
 - **Migrations**: golang-migrate
-- **AI Integration**: Groq API
+- **AI Integration**: NineRouter / OpenAI Compatible APIs
 
 ## External APIs
 
 This workspace integrates the following third-party APIs to enhance its functionality:
 
-- **Groq API**: Powers the CH1SA Assistant for AI-driven task management and conversational capabilities.
+- **NineRouter / OpenAI Compatible**: Powers the CH1SA Assistant for AI-driven task management and conversational capabilities.
 - **APIHariLibur_V2**: An open-source JSON API by *guangrei* used by the Calendar module to fetch and display Indonesian national holidays automatically.
 
 ## Getting Started
@@ -60,25 +60,34 @@ You can run this project locally by following these steps:
    
 2. **Navigate into the project**
    ```bash
-   cd CH1SA Workspace
+   cd CH1SA-Workspace
    ```
    
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-4. **Start the Go Backend**
+3. **Configure and Start the Backend**
    The workspace and CH1SA Assistant require the Go backend to run. Open a new terminal:
    ```bash
    cd backend
+   ```
+   *(Ensure you have configured the `.env` inside the `backend` folder first and run migrations/seeders. See `backend/README.md` for more details)*
+   ```bash
    go run ./cmd/server
    ```
-   *(Ensure you have configured the `.env` inside the `backend` folder first. See `backend/README.md` for more details)*
 
-5. **Start the Next.js development server**
-   In your main terminal (root directory):
+4. **Configure the Frontend Environment**
+   Open another terminal for the frontend:
    ```bash
+   cd frontend
+   cp .env.example .env
+   ```
+   Ensure `.env` inside `frontend/` points to your backend:
+   ```env
+   # Konfigurasi Backend API
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   ```
+
+5. **Install Frontend Dependencies and Run**
+   ```bash
+   npm install
    npm run dev
    ```
 
@@ -94,4 +103,4 @@ npm run check:fix
 
 ---
 
-**hawwinrmdhn67**
+*
