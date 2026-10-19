@@ -102,5 +102,3 @@ npm run check:fix
 > For more information on available rules, fixes, and CLI options, refer to the [Biome documentation](https://biomejs.dev/).
 
 ---
-
-*
