@@ -1,4 +1,3 @@
-import { useFileManager } from "@/app/(main)/dashboard/file-manager/_components/use-file-manager";
 import { addTaskGlobally, deleteTaskGlobally, updateTaskGlobally } from "@/hooks/use-kanban-data";
 import { createEvent, deleteEvent, getEvents, updateEvent } from "@/lib/api/calendar";
 import { createNote, deleteNote, getNotes, updateNote } from "@/lib/api/notes";
@@ -125,76 +124,6 @@ export const executeTool = async (type: ActionType, payload: any): Promise<ToolR
           .map((n) => ({ id: n.id, title: n.title, content: n.content.substring(0, 300) }))
           .slice(0, 5);
         return { success: true, message: JSON.stringify(compact) };
-      }
-
-      case "create_folder": {
-        const fm = useFileManager.getState();
-        if (!fm.isInitialized) await fm.initialize();
-        await fm.createFolder(payload.name, payload.parentId || null);
-        return { success: true, message: "Folder created." };
-      }
-
-      case "delete_folder": {
-        const fmd = useFileManager.getState();
-        if (!fmd.isInitialized) await fmd.initialize();
-        await fmd.deleteFolder(payload.id);
-        return { success: true, message: "Folder deleted." };
-      }
-
-      case "move_file": {
-        const fmm = useFileManager.getState();
-        if (!fmm.isInitialized) await fmm.initialize();
-        await fmm.moveFile(payload.id, payload.folderId || null);
-        return { success: true, message: "File moved." };
-      }
-
-      case "move_folder":
-        return { success: false, message: "Moving folders is not supported in the UI yet." };
-
-      case "rename_file": {
-        const fmrf = useFileManager.getState();
-        if (!fmrf.isInitialized) await fmrf.initialize();
-        await fmrf.renameFile(payload.id, payload.newName);
-        return { success: true, message: "File renamed." };
-      }
-
-      case "rename_folder": {
-        const fmrfo = useFileManager.getState();
-        if (!fmrfo.isInitialized) await fmrfo.initialize();
-        await fmrfo.renameFolder(payload.id, payload.newName);
-        return { success: true, message: "Folder renamed." };
-      }
-
-      case "delete_file": {
-        const fmdf = useFileManager.getState();
-        if (!fmdf.isInitialized) await fmdf.initialize();
-        await fmdf.deleteFile(payload.id);
-        return { success: true, message: "File deleted." };
-      }
-
-      case "star_file":
-      case "unstar_file": {
-        const fmsf = useFileManager.getState();
-        if (!fmsf.isInitialized) await fmsf.initialize();
-        await fmsf.toggleStarFile(payload.id);
-        return { success: true, message: "File star toggled." };
-      }
-
-      case "star_folder":
-      case "unstar_folder": {
-        const fmsof = useFileManager.getState();
-        if (!fmsof.isInitialized) await fmsof.initialize();
-        await fmsof.toggleStarFolder(payload.id);
-        return { success: true, message: "Folder star toggled." };
-      }
-
-      case "search_files":
-      case "search_folders": {
-        const fms = useFileManager.getState();
-        if (!fms.isInitialized) await fms.initialize();
-        const files = fms.files.map((f) => ({ id: f.id, name: f.name, kind: f.kind, size: f.size })).slice(0, 10);
-        const folders = fms.folders.map((f) => ({ id: f.id, name: f.name })).slice(0, 5);
-        return { success: true, message: JSON.stringify({ files, folders }) };
       }
 
       default:

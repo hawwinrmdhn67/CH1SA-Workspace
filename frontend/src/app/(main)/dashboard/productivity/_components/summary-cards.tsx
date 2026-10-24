@@ -48,7 +48,6 @@ export function SummaryCards() {
       description: "tasks scheduled",
       icon: Clock3,
       colorClass: "text-blue-500",
-      bgClass: "bg-blue-500/10 border-blue-500/20",
     },
     {
       title: "This Week",
@@ -56,7 +55,6 @@ export function SummaryCards() {
       description: "progress",
       icon: TrendingUp,
       colorClass: "text-violet-500",
-      bgClass: "bg-violet-500/10 border-violet-500/20",
     },
     {
       title: "Focus",
@@ -64,7 +62,6 @@ export function SummaryCards() {
       description: "high priority tasks",
       icon: Focus,
       colorClass: "text-rose-500",
-      bgClass: "bg-rose-500/10 border-rose-500/20",
     },
   ] as const;
 
@@ -76,9 +73,7 @@ export function SummaryCards() {
             <CardHeader>
               <CardTitle>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <div className={`grid size-7 place-items-center rounded-lg border ${item.bgClass}`}>
-                    <item.icon className={`size-4 ${item.colorClass}`} />
-                  </div>
+                  <item.icon className={`size-4 shrink-0 ${item.colorClass}`} />
                   {item.title}
                 </div>
               </CardTitle>

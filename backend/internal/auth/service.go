@@ -35,7 +35,7 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func generateRecoveryCode() string {
+func GenerateRecoveryCode() string {
 	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	b := make([]byte, 16)
 	
@@ -73,7 +73,7 @@ func (s *service) Register(ctx context.Context, username, password, role string,
 		return err
 	}
 
-	code := generateRecoveryCode()
+	code := GenerateRecoveryCode()
 
 	user := &models.User{
 		Username:           username,
@@ -129,7 +129,7 @@ func (s *service) RegenerateRecoveryCode(ctx context.Context, userID uuid.UUID) 
 		return "", errors.New("no user found")
 	}
 
-	newCode := generateRecoveryCode()
+	newCode := GenerateRecoveryCode()
 	err = s.repo.UpdateRecoveryCode(ctx, user.ID, newCode)
 	if err != nil {
 		return "", err
@@ -182,7 +182,7 @@ func (s *service) Login(ctx context.Context, username, password string) (*models
 	}
 
 	if user.RecoveryCode != nil && isBuggyOldCode(*user.RecoveryCode) {
-		newCode := generateRecoveryCode()
+		newCode := GenerateRecoveryCode()
 		_ = s.repo.UpdateRecoveryCode(ctx, user.ID, newCode)
 	}
 

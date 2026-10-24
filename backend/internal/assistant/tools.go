@@ -345,113 +345,6 @@ func GetToolDefinitions() []openai.Tool {
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
-				Name:        "search_files",
-				Description: "Search files.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"query": {Type: jsonschema.String},
-					},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "search_folders",
-				Description: "Search folders.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"query": {Type: jsonschema.String},
-					},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "create_folder",
-				Description: "Create folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"name":     {Type: jsonschema.String},
-						"parentId": {Type: jsonschema.String},
-					},
-					Required: []string{"name"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "update_file",
-				Description: "Rename, move, or star/unstar a file.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":        {Type: jsonschema.String},
-						"name":      {Type: jsonschema.String, Description: "Provide to identify the file if ID is unknown"},
-						"newName":   {Type: jsonschema.String},
-						"folderId":  {Type: jsonschema.String, Description: "Parent folder ID to move into"},
-						"isStarred": {Type: jsonschema.Boolean},
-					},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "update_folder",
-				Description: "Rename, move, or star/unstar a folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":        {Type: jsonschema.String},
-						"name":      {Type: jsonschema.String, Description: "Provide to identify the folder if ID is unknown"},
-						"newName":   {Type: jsonschema.String},
-						"folderId":  {Type: jsonschema.String, Description: "Parent folder ID to move into"},
-						"isStarred": {Type: jsonschema.Boolean},
-					},
-				},
-			},
-		},
-
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "delete_file",
-				Description: "Delete file.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
-					},
-					Required: []string{"name"},
-				},
-			},
-		},
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
-				Name:        "delete_folder",
-				Description: "Delete folder.",
-				Parameters: jsonschema.Definition{
-					Type: jsonschema.Object,
-					Properties: map[string]jsonschema.Definition{
-						"id":   {Type: jsonschema.String},
-						"name": {Type: jsonschema.String},
-					},
-					Required: []string{"name"},
-				},
-			},
-		},
-
-		{
-			Type: openai.ToolTypeFunction,
-			Function: &openai.FunctionDefinition{
 				Name:        "reset_workspace",
 				Description: "Reset data for specific workspace modules. VERY DANGEROUS.",
 				Parameters: jsonschema.Definition{
@@ -461,7 +354,7 @@ func GetToolDefinitions() []openai.Tool {
 							Type: jsonschema.Array,
 							Items: &jsonschema.Definition{
 								Type: jsonschema.String,
-								Description: "tasks, calendar, notes, files",
+								Description: "tasks, calendar, notes",
 							},
 						},
 					},

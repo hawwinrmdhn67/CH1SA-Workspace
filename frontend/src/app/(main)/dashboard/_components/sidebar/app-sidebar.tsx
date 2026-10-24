@@ -35,17 +35,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
-  const filteredItems = sidebarItems.map((group) => {
-    return {
-      ...group,
-      items: group.items.filter((item) => {
-        if (item.id === "file-manager") {
-          return user?.role === "admin";
-        }
-        return true;
-      })
-    };
-  }).filter((group) => {
+  const filteredItems = sidebarItems.filter((group) => {
     if (group.label === "Admin") {
       return user?.role === "admin";
     }

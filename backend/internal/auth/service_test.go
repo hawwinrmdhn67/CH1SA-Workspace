@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateRecoveryCode_Format(t *testing.T) {
-	code := generateRecoveryCode()
+	code := GenerateRecoveryCode()
 
 	if len(code) != 19 {
 		t.Errorf("Expected length 19, got %d for code %s", len(code), code)
@@ -37,7 +37,7 @@ func TestGenerateRecoveryCode_Uniqueness(t *testing.T) {
 	const count = 1000
 
 	for i := 0; i < count; i++ {
-		code := generateRecoveryCode()
+		code := GenerateRecoveryCode()
 		
 		if code == "SSSS-SSSS-SSSS-SSSS" {
 			t.Errorf("Generated the known bad static placeholder")

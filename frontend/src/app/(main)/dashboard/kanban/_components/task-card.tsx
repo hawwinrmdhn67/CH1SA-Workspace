@@ -54,15 +54,15 @@ const taskInsightIcons: Record<TaskInsightLabel, LucideIcon> = {
 };
 
 export const stateConfig: Record<string, { icon: LucideIcon; label: string; colorClass: string }> = {
-  backlog: { icon: HelpCircle, label: "Backlog", colorClass: "text-slate-500 bg-slate-500/10 dark:text-slate-400" },
-  todo: { icon: Circle, label: "Todo", colorClass: "text-blue-600 bg-blue-500/10 dark:text-blue-400" },
+  backlog: { icon: HelpCircle, label: "Backlog", colorClass: "text-slate-500 dark:text-slate-400" },
+  todo: { icon: Circle, label: "Todo", colorClass: "text-blue-600 dark:text-blue-400" },
   "in-progress": {
     icon: Timer,
     label: "In Progress",
-    colorClass: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
+    colorClass: "text-amber-600 dark:text-amber-400",
   },
-  done: { icon: CheckCircle2, label: "Done", colorClass: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400" },
-  cancelled: { icon: Ban, label: "Canceled", colorClass: "text-red-600 bg-red-500/10 dark:text-red-400" },
+  done: { icon: CheckCircle2, label: "Done", colorClass: "text-emerald-600 dark:text-emerald-400" },
+  cancelled: { icon: Ban, label: "Canceled", colorClass: "text-red-600 dark:text-red-400" },
 };
 
 export const priorityBadgeConfig: Record<

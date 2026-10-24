@@ -11,7 +11,6 @@ import (
 	"chisa-assistant-backend/internal/calendar"
 	"chisa-assistant-backend/internal/config"
 	"chisa-assistant-backend/internal/database"
-	"chisa-assistant-backend/internal/files"
 	auth_middleware "chisa-assistant-backend/internal/middleware"
 	"chisa-assistant-backend/internal/notes"
 	"chisa-assistant-backend/internal/tasks"
@@ -45,10 +44,6 @@ func main() {
 	notesService := notes.NewService(notesRepo)
 	notesHandler := notes.NewHandler(notesService)
 
-	filesRepo := files.NewRepository()
-	filesService := files.NewService(filesRepo)
-	filesHandler := files.NewHandler(filesService)
-
 	authRepo := auth.NewRepository()
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
@@ -57,7 +52,7 @@ func main() {
 	adminService := admin.NewService(adminRepo, authService)
 	adminHandler := admin.NewHandler(adminService)
 
-	assistantService, err := assistant.NewService(cfg, taskService, calendarService, notesService, filesService)
+	assistantService, err := assistant.NewService(cfg, taskService, calendarService, notesService)
 	if err != nil {
 		log.Fatalf("Failed to initialize assistant service: %v", err)
 	}
@@ -162,24 +157,6 @@ func main() {
 		notesRoutes.GET("/:id", notesHandler.Get)
 		notesRoutes.PATCH("/:id", notesHandler.Update)
 		notesRoutes.DELETE("/:id", notesHandler.Delete)
-	}
-
-	foldersRoutes := api.Group("/folders")
-	foldersRoutes.Use(auth_middleware.RequireAuth(authService), auth_middleware.RequireAdmin())
-	{
-		foldersRoutes.GET("", filesHandler.ListFolders)
-		foldersRoutes.POST("", filesHandler.CreateFolder)
-		foldersRoutes.PATCH("/:id", filesHandler.UpdateFolder)
-		foldersRoutes.DELETE("/:id", filesHandler.DeleteFolder)
-	}
-
-	filesRoutes := api.Group("/files")
-	filesRoutes.Use(auth_middleware.RequireAuth(authService), auth_middleware.RequireAdmin())
-	{
-		filesRoutes.GET("", filesHandler.ListFiles)
-		filesRoutes.POST("", filesHandler.CreateFile)
-		filesRoutes.PATCH("/:id", filesHandler.UpdateFile)
-		filesRoutes.DELETE("/:id", filesHandler.DeleteFile)
 	}
 
 	assistantRoutes := api.Group("/assistant")

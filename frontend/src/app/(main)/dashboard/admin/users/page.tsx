@@ -199,11 +199,11 @@ export default function UserManagementPage() {
                     <TableCell className="capitalize py-3 align-middle">{u.role}</TableCell>
                     <TableCell className="py-3 align-middle">
                       {u.isActive ? (
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-green-500">
+                        <span className="inline-flex items-center text-xs font-semibold text-green-500">
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive">
+                        <span className="inline-flex items-center text-xs font-semibold text-destructive">
                           Inactive
                         </span>
                       )}

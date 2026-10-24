@@ -55,7 +55,7 @@ function ListColumn({
         <div className="min-w-0 flex items-center gap-2">
           <div
             className={cn(
-              "flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold",
+              "flex items-center gap-1.5 font-semibold",
               config ? config.colorClass : "text-foreground",
             )}
           >

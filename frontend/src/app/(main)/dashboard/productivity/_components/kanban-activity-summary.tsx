@@ -21,7 +21,6 @@ export function KanbanActivitySummary() {
       description: "ideas & backlog",
       icon: Inbox,
       colorClass: "text-slate-500",
-      bgClass: "bg-slate-500/10 border-slate-500/20",
     },
     {
       title: "To Do",
@@ -29,7 +28,6 @@ export function KanbanActivitySummary() {
       description: "queued tasks",
       icon: ListTodo,
       colorClass: "text-sky-500",
-      bgClass: "bg-sky-500/10 border-sky-500/20",
     },
     {
       title: "In Progress",
@@ -37,7 +35,6 @@ export function KanbanActivitySummary() {
       description: "active tasks",
       icon: Activity,
       colorClass: "text-amber-500",
-      bgClass: "bg-amber-500/10 border-amber-500/20",
     },
     {
       title: "Done",
@@ -45,7 +42,6 @@ export function KanbanActivitySummary() {
       description: "completed tasks",
       icon: CheckCircle2,
       colorClass: "text-emerald-500",
-      bgClass: "bg-emerald-500/10 border-emerald-500/20",
     },
     {
       title: "Cancelled",
@@ -53,7 +49,6 @@ export function KanbanActivitySummary() {
       description: "archived tasks",
       icon: Archive,
       colorClass: "text-rose-500",
-      bgClass: "bg-rose-500/10 border-rose-500/20",
     },
   ] as const;
 
@@ -65,9 +60,7 @@ export function KanbanActivitySummary() {
             <CardHeader>
               <CardTitle>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <div className={`grid size-7 place-items-center rounded-lg border shrink-0 ${item.bgClass}`}>
-                    <item.icon className={`size-4 ${item.colorClass}`} />
-                  </div>
+                  <item.icon className={`size-4 shrink-0 ${item.colorClass}`} />
                   <span className="truncate">{item.title}</span>
                 </div>
               </CardTitle>

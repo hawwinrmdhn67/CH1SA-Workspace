@@ -123,29 +123,3 @@ func wrapEvents(items []*models.CalendarEvent) []Matchable {
 	}
 	return res
 }
-
-type fileMatcher struct{ *models.File }
-func (m fileMatcher) GetID() string       { return m.ID.String() }
-func (m fileMatcher) GetTitle() string    { return m.Name }
-func (m fileMatcher) GetMetadata() string { return fmt.Sprintf("Kind: %s", m.Kind) }
-
-func wrapFiles(items []*models.File) []Matchable {
-	res := make([]Matchable, len(items))
-	for i, v := range items {
-		res[i] = fileMatcher{v}
-	}
-	return res
-}
-
-type folderMatcher struct{ *models.Folder }
-func (m folderMatcher) GetID() string       { return m.ID.String() }
-func (m folderMatcher) GetTitle() string    { return m.Name }
-func (m folderMatcher) GetMetadata() string { return "" }
-
-func wrapFolders(items []*models.Folder) []Matchable {
-	res := make([]Matchable, len(items))
-	for i, v := range items {
-		res[i] = folderMatcher{v}
-	}
-	return res
-}

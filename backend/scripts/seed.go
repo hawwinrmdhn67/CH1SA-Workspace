@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"chisa-assistant-backend/internal/auth"
 	"chisa-assistant-backend/internal/config"
 	"chisa-assistant-backend/internal/database"
 
@@ -20,18 +21,28 @@ func seedAdmin(ctx context.Context) {
 		log.Fatalf("Failed to hash password: %v", err)
 	}
 
+	recoveryCode := auth.GenerateRecoveryCode()
+
 	var adminID string
+	var finalRecoveryCode string
 	err = database.Pool.QueryRow(ctx, `
-		INSERT INTO users (username, password_hash, role, is_active, must_change_password)
-		VALUES ($1, $2, 'admin', true, false)
-		ON CONFLICT (username) DO UPDATE SET password_hash = $2, role = 'admin'
-		RETURNING id
-	`, "admin", string(hash)).Scan(&adminID)
+		INSERT INTO users (username, password_hash, recovery_code, role, is_active, must_change_password)
+		VALUES ($1, $2, $3, 'admin', true, false)
+		ON CONFLICT (username) DO UPDATE SET 
+			password_hash = $2, 
+			role = 'admin',
+			recovery_code = COALESCE(users.recovery_code, EXCLUDED.recovery_code)
+		RETURNING id, recovery_code
+	`, "admin", string(hash), recoveryCode).Scan(&adminID, &finalRecoveryCode)
 
 	if err != nil {
 		log.Fatalf("Failed to seed admin user: %v", err)
 	}
 	log.Printf("Admin user 'admin' seeded successfully with ID: %s", adminID)
+	log.Printf("=================================================================")
+	log.Printf("Admin Recovery Code: %s", finalRecoveryCode)
+	log.Printf("Save this recovery code to reset password if credentials are lost.")
+	log.Printf("=================================================================")
 }
 
 func seedTables(ctx context.Context) {
@@ -43,18 +54,6 @@ func seedTables(ctx context.Context) {
 		log.Fatalf("Admin user not found. Please run with -admin flag first.")
 	}
 
-	
-	var folderID string
-	err = database.Pool.QueryRow(ctx, `
-		INSERT INTO folders (user_id, name)
-		VALUES ($1, 'Documents')
-		RETURNING id
-	`, adminID).Scan(&folderID)
-	if err != nil {
-		log.Printf("Warning: Failed to seed folder: %v", err)
-	} else {
-		log.Printf("Folder 'Documents' seeded with ID: %s", folderID)
-	}
 
 	
 	_, err = database.Pool.Exec(ctx, `

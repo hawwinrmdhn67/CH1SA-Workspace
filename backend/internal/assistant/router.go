@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"chisa-assistant-backend/internal/calendar"
-	"chisa-assistant-backend/internal/files"
 	"chisa-assistant-backend/internal/models"
 	"chisa-assistant-backend/internal/notes"
 	"chisa-assistant-backend/internal/tasks"
@@ -19,15 +18,13 @@ type Router struct {
 	taskService     tasks.Service
 	calendarService calendar.Service
 	notesService    notes.Service
-	filesService    files.Service
 }
 
-func NewRouter(taskService tasks.Service, calendarService calendar.Service, notesService notes.Service, filesService files.Service) *Router {
+func NewRouter(taskService tasks.Service, calendarService calendar.Service, notesService notes.Service) *Router {
 	return &Router{
 		taskService:     taskService,
 		calendarService: calendarService,
 		notesService:    notesService,
-		filesService:    filesService,
 	}
 }
 
@@ -79,18 +76,6 @@ func (r *Router) resolveEntityID(ctx context.Context, args map[string]interface{
 			return e
 		}
 		id, err = MatchEntity(titleStr, wrapNotes(list))
-	case "file":
-		list, e := r.filesService.ListFiles(ctx, userID)
-		if e != nil {
-			return e
-		}
-		id, err = MatchEntity(titleStr, wrapFiles(list))
-	case "folder":
-		list, e := r.filesService.ListFolders(ctx, userID)
-		if e != nil {
-			return e
-		}
-		id, err = MatchEntity(titleStr, wrapFolders(list))
 	}
 
 	if err != nil {
@@ -123,14 +108,6 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 		}
 	case "update_note", "delete_note":
 		if err := r.resolveEntityID(ctx, args, "note", "id", "title"); err != nil {
-			return "", eval, err
-		}
-	case "update_file":
-		if err := r.resolveEntityID(ctx, args, "file", "id", "name"); err != nil {
-			return "", eval, err
-		}
-	case "update_folder":
-		if err := r.resolveEntityID(ctx, args, "folder", "id", "name"); err != nil {
 			return "", eval, err
 		}
 	}
@@ -215,26 +192,6 @@ func (r *Router) ValidateToolCall(ctx context.Context, toolName string, args map
 			title = getString(args, "id")
 		}
 		return fmt.Sprintf("I will DELETE the note: %s", title), eval, nil
-
-	case "search_files", "search_folders":
-		return "Searching files...", eval, nil
-
-	case "create_folder":
-		name, _ := args["name"].(string)
-		if name == "" {
-			return "", eval, fmt.Errorf("folder name is required")
-		}
-		return fmt.Sprintf("I'll create a folder: %s", name), eval, nil
-
-	case "update_file", "update_folder":
-		return fmt.Sprintf("I'll %s.", toolName), eval, nil
-
-	case "delete_file", "delete_folder":
-		name := getString(args, "name")
-		if name == "" {
-			name = getString(args, "id")
-		}
-		return fmt.Sprintf("I will DELETE %s: %s", toolName, name), eval, nil
 
 	case "reset_workspace":
 		scopes, _ := args["scope"].([]interface{})
@@ -549,108 +506,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 			executeErr = err
 		}
 
-	case "create_folder":
-		parentIDStr := getString(args, "parentId")
-		var parentID *uuid.UUID
-		if parentIDStr != "" && parentIDStr != "null" {
-			pid := parseUUID(parentIDStr)
-			if pid != uuid.Nil {
-				parentID = &pid
-			}
-		}
-		executeErr = r.filesService.CreateFolder(ctx, userID, &models.Folder{
-			Name:     getString(args, "name"),
-			ParentID: parentID,
-		})
-	case "update_folder":
-		folderID := parseUUID(getString(args, "id"))
-		existingFolder, err := r.filesService.GetFolder(ctx, userID, folderID)
-		if err != nil {
-			executeErr = fmt.Errorf("folder not found: %w", err)
-			break
-		}
-		if val, ok := args["newName"].(string); ok && val != "" {
-			existingFolder.Name = val
-		}
-		if val, ok := args["isStarred"].(bool); ok {
-			existingFolder.IsStarred = val
-		}
-		if folderIDStr := getString(args, "folderId"); folderIDStr != "" {
-			if folderIDStr == "null" {
-				existingFolder.ParentID = nil
-			} else {
-				pid := parseUUID(folderIDStr)
-				if pid != uuid.Nil {
-					existingFolder.ParentID = &pid
-				}
-			}
-		}
-		executeErr = r.filesService.UpdateFolder(ctx, userID, existingFolder)
-		
-	case "delete_folder":
-		executeErr = r.filesService.DeleteFolder(ctx, userID, parseUUID(getString(args, "id")))
-		
-	case "update_file":
-		fileID := parseUUID(getString(args, "id"))
-		existingFile, err := r.filesService.GetFile(ctx, userID, fileID)
-		if err != nil {
-			executeErr = fmt.Errorf("file not found: %w", err)
-			break
-		}
-		if val, ok := args["newName"].(string); ok && val != "" {
-			existingFile.Name = val
-		}
-		if val, ok := args["isStarred"].(bool); ok {
-			existingFile.IsStarred = val
-		}
-		if folderIDStr := getString(args, "folderId"); folderIDStr != "" {
-			if folderIDStr == "null" {
-				existingFile.FolderID = nil
-			} else {
-				pid := parseUUID(folderIDStr)
-				if pid != uuid.Nil {
-					existingFile.FolderID = &pid
-				}
-			}
-		}
-		executeErr = r.filesService.UpdateFile(ctx, userID, existingFile)
-		
-	case "delete_file":
-		executeErr = r.filesService.DeleteFile(ctx, userID, parseUUID(getString(args, "id")))
-	case "search_files", "search_folders":
-		filesList, err1 := r.filesService.ListFiles(ctx, userID)
-		foldersList, err2 := r.filesService.ListFolders(ctx, userID)
-		if err1 == nil && err2 == nil {
-			compactFiles := make([]map[string]interface{}, 0)
-			for i, f := range filesList {
-				if i >= 5 {
-					break
-				}
-				compactFiles = append(compactFiles, map[string]interface{}{
-					"id": f.ID, "name": f.Name, "kind": f.Kind,
-				})
-			}
-			compactFolders := make([]map[string]interface{}, 0)
-			for i, f := range foldersList {
-				if i >= 5 {
-					break
-				}
-				compactFolders = append(compactFolders, map[string]interface{}{
-					"id": f.ID, "name": f.Name,
-				})
-			}
-			args["results"] = map[string]interface{}{
-				"files":   compactFiles,
-				"folders": compactFolders,
-			}
-		} else {
-			if err1 != nil {
-				executeErr = err1
-			} else {
-				executeErr = err2
-			}
-		}
-
 	case "reset_workspace":
 		scopes, _ := args["scope"].([]interface{})
 		for _, s := range scopes {
@@ -670,15 +525,6 @@ func (r *Router) ExecuteTool(ctx context.Context, toolName string, args map[stri
 					notesList, _ := r.notesService.ListNotes(ctx, userID)
 					for _, n := range notesList {
 						r.notesService.DeleteNote(ctx, userID, n.ID)
-					}
-				case "files":
-					filesList, _ := r.filesService.ListFiles(ctx, userID)
-					for _, f := range filesList {
-						r.filesService.DeleteFile(ctx, userID, f.ID)
-					}
-					foldersList, _ := r.filesService.ListFolders(ctx, userID)
-					for _, f := range foldersList {
-						r.filesService.DeleteFolder(ctx, userID, f.ID)
 					}
 				}
 			}

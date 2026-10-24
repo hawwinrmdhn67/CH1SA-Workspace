@@ -6,7 +6,7 @@ This is the backend service for the CH1SA Assistant, built with Go and PostgreSQ
 
 - **Go 1.22+**: Core backend logic and HTTP server.
 - **Gin Web Framework**: Fast and lightweight HTTP routing.
-- **PostgreSQL**: Relational database for storing workspace entities (Tasks, Notes, Calendar, Files, Users).
+- **PostgreSQL**: Relational database for storing workspace entities (Tasks, Notes, Calendar, Users).
 - **NineRouter / OpenAI Compatible API**: LLM inference for the CH1SA conversational AI.
 - **Golang Migrate**: Database schema migrations.
 
@@ -14,7 +14,7 @@ This is the backend service for the CH1SA Assistant, built with Go and PostgreSQ
 
 1. **AI Assistant Integration**: Connects with NineRouter / OpenAI compatible APIs to provide a contextual conversational experience.
 2. **Policy Engine**: An intelligent validation layer (`INTENT → SCOPE → RISK → PLAN → POLICY → EXECUTION`) that ensures the AI cannot perform unauthorized or destructive actions without explicit user confirmation.
-3. **Workspace Management API**: Full CRUD endpoints for Tasks (Kanban), Calendar Events, Notes, and a Virtual File System.
+3. **Workspace Management API**: Full CRUD endpoints for Tasks (Kanban), Calendar Events, and Notes.
 4. **Tool Calling**: Allows the AI to autonomously query the database and prepare workspace mutations.
 
 ## Getting Started
@@ -67,13 +67,13 @@ go run ./cmd/migrate down
 To populate the database with an initial `admin` account and some dummy workspace data, you can use the built-in seed script. The script uses flags to determine what data to seed:
 
 ```bash
-# Seed the admin user only (username: admin, password: admin123)
+# Seed the admin user (username: admin , password: admin123)
 go run ./scripts/seed.go -admin
 
-# Seed dummy workspace data (tasks, notes, folders) for the admin user
-go run ./scripts/seed.go -dummy
+# Seed dummy workspace data (tasks, notes) for the admin user
+go run ./scripts/seed.go -tables
 
-# Seed both admin and dummy data at once
+# Seed both admin and tables data at once
 go run ./scripts/seed.go -all
 ```
 

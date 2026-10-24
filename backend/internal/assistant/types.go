@@ -51,8 +51,6 @@ const (
 	EntityKanban       Entity = "KANBAN"
 	EntityCalendar     Entity = "CALENDAR_EVENT"
 	EntityNote         Entity = "NOTE"
-	EntityFile         Entity = "FILE"
-	EntityFolder       Entity = "FOLDER"
 	EntityWorkspace    Entity = "WORKSPACE"
 )
 

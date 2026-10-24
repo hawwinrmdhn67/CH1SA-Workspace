@@ -130,55 +130,6 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 			Decision: PolicyConfirm,
 		}
 
-	case "search_files", "search_folders":
-		return PolicyEvaluation{
-			Intent:   "read_files",
-			Scope:    ScopeCollection,
-			Entity:   EntityWorkspace,
-			Risk:     RiskLow,
-			Decision: PolicyAllow,
-		}
-	case "create_folder":
-		return PolicyEvaluation{
-			Intent:   "create_folder",
-			Scope:    ScopeSingle,
-			Entity:   EntityFolder,
-			Risk:     RiskLow,
-			Decision: PolicyConfirm,
-		}
-	case "rename_file", "move_file", "star_file", "unstar_file":
-		return PolicyEvaluation{
-			Intent:   "update_file",
-			Scope:    ScopeSingle,
-			Entity:   EntityFile,
-			Risk:     RiskMedium,
-			Decision: PolicyConfirm,
-		}
-	case "rename_folder", "move_folder", "star_folder", "unstar_folder":
-		return PolicyEvaluation{
-			Intent:   "update_folder",
-			Scope:    ScopeSingle,
-			Entity:   EntityFolder,
-			Risk:     RiskMedium,
-			Decision: PolicyConfirm,
-		}
-	case "delete_file":
-		return PolicyEvaluation{
-			Intent:   "delete_file",
-			Scope:    ScopeSingle,
-			Entity:   EntityFile,
-			Risk:     RiskHigh,
-			Decision: PolicyConfirm,
-		}
-	case "delete_folder":
-		return PolicyEvaluation{
-			Intent:   "delete_folder",
-			Scope:    ScopeSingle,
-			Entity:   EntityFolder,
-			Risk:     RiskVeryHigh,
-			Decision: PolicyConfirm,
-		}
-
 	case "reset_workspace":
 		scopes, ok := args["scope"].([]interface{})
 		if !ok || len(scopes) == 0 {
@@ -188,7 +139,7 @@ func EvaluateAction(toolName string, args map[string]interface{}) PolicyEvaluati
 				Entity:   EntityWorkspace,
 				Risk:     RiskCritical,
 				Decision: PolicyClarify,
-				Message:  "What would you like to reset? (Tasks, Calendar, Notes, Files, or Everything)",
+				Message:  "What would you like to reset? (Tasks, Calendar, Notes, or Everything)",
 			}
 		}
 

@@ -13,7 +13,6 @@ import (
 
 	"chisa-assistant-backend/internal/calendar"
 	"chisa-assistant-backend/internal/config"
-	"chisa-assistant-backend/internal/files"
 	"chisa-assistant-backend/internal/notes"
 	"chisa-assistant-backend/internal/tasks"
 
@@ -40,7 +39,7 @@ type Service struct {
 	mu             sync.RWMutex
 }
 
-func NewService(cfg *config.Config, taskService tasks.Service, calendarService calendar.Service, notesService notes.Service, filesService files.Service) (*Service, error) {
+func NewService(cfg *config.Config, taskService tasks.Service, calendarService calendar.Service, notesService notes.Service) (*Service, error) {
 	clientConfig := openai.DefaultConfig(cfg.NineRouterAPIKey)
 	clientConfig.BaseURL = cfg.NineRouterBaseURL
 
@@ -49,7 +48,7 @@ func NewService(cfg *config.Config, taskService tasks.Service, calendarService c
 	return &Service{
 		client:         client,
 		model:          cfg.NineRouterModel,
-		router:         NewRouter(taskService, calendarService, notesService, filesService),
+		router:         NewRouter(taskService, calendarService, notesService),
 		sessions:       make(map[string]*ChatSession),
 		pendingActions: make(map[string]*StoredAction),
 	}, nil
