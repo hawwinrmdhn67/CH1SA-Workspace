@@ -10,8 +10,7 @@ Built to be a minimal and flexible alternative to cluttered dashboards, CH1SA fo
 - **Responsive Design**: Fully responsive and mobile-friendly interface.
 - **Customizable Themes**: Built-in support for light and dark modes with customizable theme presets.
 - **Flexible Layouts**: Includes a collapsible sidebar and variable content widths.
-- **Workspace Modules**: Productivity, Kanban Board, and Calendar.
-- **Personal Modules**: Notes and File Manager.
+- **Workspace Modules**: Productivity, Kanban Board, Calendar and Notes.
 
 ## Modules
 
