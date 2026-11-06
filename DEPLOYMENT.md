@@ -87,16 +87,13 @@ sudo apt install -y curl wget git htop ufw ca-certificates gnupg lsb-release
 ### 3. Konfigurasi Swap Memory (Sangat Direkomendasikan)
 Next.js build dan kompilasi Go membutuhkan alokasi memori yang cukup. Jika server memiliki RAM 1-2 GB, buat swap 2 GB agar build tidak mengalami error *Out of Memory (OOM)*:
 ```bash
-# Periksa apakah swap sudah ada
 sudo swapon --show
 
-# Jika belum ada swap, buat file swap 2GB
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
-# Jadikan permanen setelah server reboot
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
@@ -104,25 +101,20 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 Gunakan repository resmi Docker untuk mendapatkan versi stabil terbaru:
 
 ```bash
-# 1. Hapus instalasi lama jika ada
 sudo apt remove -y docker docker-engine docker.io containerd runc
 
-# 2. Tambahkan GPG key resmi Docker
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# 3. Tambahkan Docker repository ke apt sources
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# 4. Install Docker Engine dan Docker Compose Plugin
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# 5. Aktifkan service Docker agar otomatis start saat VPS reboot
 sudo systemctl enable --now docker
 ```
 
@@ -152,7 +144,6 @@ docker compose version
 ### 1. Clone Project ke VPS
 Unduh repository project ke direktori `/var/www/chisa` atau folder home user Anda:
 ```bash
-# Contoh membuat direktori di home user
 cd ~
 git clone <URL_REPOSITORY_GIT_ANDA> CH1SA-Workspace
 cd CH1SA-Workspace
@@ -173,44 +164,22 @@ nano .env
 Sesuaikan variabel dengan konfigurasi sebenarnya:
 
 ```ini
-# =================================================================
-# 1. Database PostgreSQL
-# =================================================================
 POSTGRES_USER=chisa
-# Buat password yang kuat dan acak:
 POSTGRES_PASSWORD=generate_password_acak_disini
 POSTGRES_DB=chisa
 
-# =================================================================
-# 2. Keamanan Backend & JWT
-# =================================================================
-# Generate secret 32-karakter acak dengan command: openssl rand -hex 32
 JWT_SECRET=generate_jwt_secret_acak_disini
 GIN_MODE=release
-# Set 'true' jika ingin membuat user admin default saat deployment pertama
 AUTO_SEED=true
 
-# =================================================================
-# 3. AI Assistant Integration (NineRouter / OpenRouter)
-# =================================================================
 NINEROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxx
 NINEROUTER_BASE_URL=https://openrouter.ai/api/v1
 NINEROUTER_MODEL=openai/gpt-4o-mini
 
-# =================================================================
-# 4. CORS & URL Frontend
-# =================================================================
-# Jika menggunakan IP VPS langsung tanpa domain:
 CORS_ORIGINS=http://IP_VPS_ANDA:3000
 NEXT_PUBLIC_API_URL=http://IP_VPS_ANDA:8080
 
-# Jika menggunakan Domain / Nginx Reverse Proxy (Contoh):
-# CORS_ORIGINS=https://app.domainanda.com,https://api.domainanda.com
-# NEXT_PUBLIC_API_URL=https://api.domainanda.com (atau https://app.domainanda.com)
 
-# =================================================================
-# 5. Port Host (Opsional)
-# =================================================================
 FRONTEND_PORT=3000
 BACKEND_PORT=8080
 ```
@@ -261,13 +230,10 @@ chisa-postgres   postgres:16-alpine     "docker-entrypoint.s…"   postgres   Up
 ### 3. Memeriksa Log Aplikasi
 Untuk memastikan migrasi database berhasil dan server berjalan lancar:
 ```bash
-# Melihat log gabungan seluruh service
 docker compose logs -f
 
-# Atau melihat log backend saja
 docker compose logs -f backend
 
-# Atau melihat log frontend saja
 docker compose logs -f frontend
 ```
 Tekan `Ctrl + C` untuk keluar dari tampilan log.
@@ -275,17 +241,11 @@ Tekan `Ctrl + C` untuk keluar dari tampilan log.
 ### 4. Verifikasi Akses Aplikasi
 Lakukan pengujian HTTP langsung dari server:
 ```bash
-# 1. Test Backend Health Check
 curl -i http://localhost:8080/health
-# Response yang diharapkan: HTTP/1.1 200 OK -> "OK"
 
-# 2. Test Koneksi Backend ke Database PostgreSQL
 curl -i http://localhost:8080/health/db
-# Response yang diharapkan: HTTP/1.1 200 OK -> "Database is healthy"
 
-# 3. Test Frontend Next.js
 curl -I http://localhost:3000/
-# Response yang diharapkan: HTTP/1.1 200 OK (atau 307 Redirect ke /login atau /dashboard)
 ```
 
 Buka browser Anda dan akses:
@@ -331,7 +291,6 @@ server {
 
     client_max_body_size 25M;
 
-    # Health check backend
     location = /health {
         proxy_pass http://127.0.0.1:8080/health;
         proxy_http_version 1.1;
@@ -341,7 +300,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # API Backend
     location /api/ {
         proxy_pass http://127.0.0.1:8080/api/;
         proxy_http_version 1.1;
@@ -350,12 +308,10 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Mendukung streaming respons AI
         proxy_buffering off;
         proxy_read_timeout 300s;
     }
 
-    # Frontend Next.js
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -404,13 +360,10 @@ docker stats --no-stream
 
 ### 2. Menghentikan dan Menjalankan Kembali Aplikasi
 ```bash
-# Menghentikan container (data database tetap aman di volume)
 docker compose stop
 
-# Menjalankan kembali container
 docker compose start
 
-# Mematikan dan menghapus container (volume database TIDAK terhapus)
 docker compose down
 ```
 
@@ -419,13 +372,10 @@ Ketika Anda melakukan push perubahan kode ke GitHub/GitLab, jalankan langkah ber
 ```bash
 cd ~/CH1SA-Workspace
 
-# 1. Tarik pembaruan kode terbaru
 git pull origin main
 
-# 2. Rebuild dan restart container tanpa downtime database
 docker compose up -d --build
 
-# 3. Bersihkan sisa image build lama untuk menghemat kapasitas disk
 docker image prune -f
 ```
 
@@ -438,13 +388,10 @@ Data database PostgreSQL disimpan secara persisten di Docker Named Volume `chisa
 ### 1. Membuat Backup Database
 Jalankan perintah berikut untuk mengekspor database ke file `.sql.gz` berstempel waktu:
 ```bash
-# Buat folder khusus backup jika belum ada
 mkdir -p ~/backups
 
-# Ekspor database ke file terkompresi
 docker compose exec -T postgres pg_dump -U chisa chisa | gzip > ~/backups/chisa_backup_$(date +%Y%m%d_%H%M%S).sql.gz
 
-# Verifikasi file backup berhasil dibuat
 ls -lh ~/backups
 ```
 
@@ -462,7 +409,6 @@ Tambahkan baris berikut di akhir file:
 ### 3. Restore Database dari File Backup
 Jika terjadi kendala data dan ingin mengembalikan database dari file backup:
 ```bash
-# Ganti nama file dengan nama file backup yang ingin di-restore
 gunzip -c ~/backups/chisa_backup_20261106_120000.sql.gz | docker compose exec -T postgres psql -U chisa -d chisa
 ```
 
@@ -515,10 +461,8 @@ gunzip -c ~/backups/chisa_backup_20261106_120000.sql.gz | docker compose exec -T
 - **Penyebab**: Firewall UFW di VPS atau Security Group di dashboard cloud provider (AWS EC2 / DigitalOcean / Linode / GCP) memblokir port masuk.
 - **Solusi**:
   ```bash
-  # Periksa status firewall UFW
   sudo ufw status
 
-  # Buka port yang diperlukan
   sudo ufw allow 22/tcp
   sudo ufw allow 80/tcp
   sudo ufw allow 443/tcp

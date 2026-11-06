@@ -1,4 +1,2 @@
-# local env files
 .env
-# env files
 .env*.local
