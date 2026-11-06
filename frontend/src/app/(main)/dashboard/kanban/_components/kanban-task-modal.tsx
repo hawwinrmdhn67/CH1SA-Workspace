@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { stateConfig } from "./task-card";
+import { priorityBadgeConfig, stateConfig } from "./task-card";
 import type { Subtask, Task, TaskPriority, ColumnId } from "./types";
 
 const parseDate = (dateStr: string) => {
@@ -199,7 +199,7 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
                 <SelectTrigger>
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="top">
                   {Object.entries(stateConfig).map(([key, config]) => {
                     const Icon = config.icon;
                     return (
@@ -227,12 +227,25 @@ export function KanbanTaskModal({ task, defaultState, onSave, children, open, on
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Urgent">Urgent</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="None">None</SelectItem>
+                <SelectContent position="popper" side="top">
+                  {Object.entries(priorityBadgeConfig).map(([key, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <SelectItem
+                        key={key}
+                        value={key}
+                        className={cn(
+                          "mb-1 last:mb-0 font-medium focus:opacity-80 focus:text-current",
+                          config.className,
+                        )}
+                      >
+                        <div className={cn("flex items-center", config.className)}>
+                          <Icon className="mr-2 size-4" />
+                          {key}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

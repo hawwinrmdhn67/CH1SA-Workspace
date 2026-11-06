@@ -71,11 +71,11 @@ export function KanbanColumn({
         columnSortable.isDragging && "opacity-60",
       )}
     >
-      <div
-        className="flex items-center justify-between px-3 pt-2 pb-2 cursor-grab active:cursor-grabbing"
-        ref={columnSortable.handleRef}
-      >
-        <div className="min-w-0 flex items-center gap-2">
+      <div className="flex items-center justify-between px-3 pt-2 pb-2">
+        <div
+          className="min-w-0 flex-1 flex items-center gap-2 cursor-grab active:cursor-grabbing select-none"
+          ref={columnSortable.handleRef}
+        >
           {(() => {
             const config = stateConfig[column.id];
             const StateIcon = config ? config.icon : Circle;
@@ -93,9 +93,20 @@ export function KanbanColumn({
           })()}
           <span className="text-muted-foreground font-medium text-sm tabular-nums leading-none">{tasks.length}</span>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
+        <div
+          className="flex items-center gap-1 text-muted-foreground shrink-0"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <KanbanTaskModal onSave={onAddTask} defaultState={column.id}>
-            <Button variant="ghost" size="icon-sm" aria-label={`Add task to ${column.title}`}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Add task to ${column.title}`}
+              className="cursor-pointer"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
               <Plus />
             </Button>
           </KanbanTaskModal>

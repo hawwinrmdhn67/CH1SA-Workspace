@@ -1,0 +1,15 @@
+.git
+.github
+.gemini
+.husky
+**/.git
+**/node_modules
+**/.next
+**/bin
+**/tmp
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+.DS_Store
+

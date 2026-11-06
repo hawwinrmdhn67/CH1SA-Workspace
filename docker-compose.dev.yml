@@ -1,0 +1,100 @@
+
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+
+    restart: "no"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      9router:
+        condition: service_started
+
+    environment:
+      GIN_MODE: debug
+      APP_ENV: development
+      NINEROUTER_BASE_URL: http://9router:20128/v1
+      NINEROUTER_MODEL: my-combo
+
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "==> Running database migrations..."
+        go run ./cmd/migrate up
+        if [ "$AUTO_SEED" = "true" ]; then
+          echo "==> Running database seed..."
+          go run ./cmd/seed
+        fi
+        echo "==> Starting Go development server..."
+        exec air -c .air.toml
+
+    volumes:
+      - ./backend:/app
+
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+
+    restart: "no"
+
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+
+    command:
+      - npm
+      - run
+      - dev
+      - --
+      - --hostname
+      - 0.0.0.0
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+    ports:
+      - "3000:3000"
+
+  9router:
+    image: decolua/9router:latest
+    container_name: chisa-9router-dev
+    restart: unless-stopped
+
+    environment:
+      DATA_DIR: /app/data
+      PORT: "20128"
+      HOSTNAME: "0.0.0.0"
+      NODE_ENV: production
+      INITIAL_PASSWORD: ${NINEROUTER_INITIAL_PASSWORD:?Initial password is required}
+
+    volumes:
+      - ninerouter_data:/app/data
+
+    ports:
+      - "127.0.0.1:20129:20128"
+
+    networks:
+      - chisa-network
+
+volumes:
+  postgres_data:
+    name: chisa_postgres_dev_data
+
+  ninerouter_data:
+    name: chisa_ninerouter_dev_data
+

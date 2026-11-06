@@ -1,0 +1,156 @@
+
+name: chisa-workspace
+
+services:
+  # -------------------------------------------------------------
+  # PostgreSQL Database Service
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: chisa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chisa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-chisa}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - chisa-network
+    # Port is not exposed to host in production for enhanced security.
+    # If direct host access is required (e.g. for GUI client during development),
+    # uncomment the line below or set POSTGRES_PORT in .env:
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-chisa} -d $${POSTGRES_DB:-chisa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # -------------------------------------------------------------
+  # Backend API Service (Go / Gin)
+  # -------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chisa-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      9router:
+        condition: service_started
+    environment:
+      PORT: 8080
+      GIN_MODE: ${GIN_MODE:-release}
+      DATABASE_URL: postgres://${POSTGRES_USER:-chisa}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-chisa}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-chisa_local_development_secret_key_32chars}
+      NINEROUTER_API_KEY: ${NINEROUTER_API_KEY:?NineRouter API Key is required}
+      NINEROUTER_BASE_URL: ${NINEROUTER_BASE_URL:-http://9router:20128/v1}
+      NINEROUTER_MODEL: ${NINEROUTER_MODEL:-my-combo}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      AUTO_SEED: ${AUTO_SEED:-false}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - chisa-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # -------------------------------------------------------------
+  # 9Router AI Proxy Service
+  # -------------------------------------------------------------
+  9router:
+    image: decolua/9router:latest
+    container_name: chisa-9router
+    restart: unless-stopped
+    environment:
+      DATA_DIR: /app/data
+      PORT: "20128"
+      HOSTNAME: "0.0.0.0"
+      NODE_ENV: production
+      INITIAL_PASSWORD: ${NINEROUTER_INITIAL_PASSWORD:-admin123456}
+    volumes:
+      - ninerouter_data:/app/data
+    ports:
+      - "127.0.0.1:20128:20128"
+    networks:
+      - chisa-network
+
+  # -------------------------------------------------------------
+  # Frontend Application Service (Next.js Standalone)
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    container_name: chisa-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - chisa-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # -------------------------------------------------------------
+  # Optional Reverse Proxy Service (Nginx)
+  # Activate with: docker compose --profile proxy up -d
+  # -------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: chisa-nginx
+    restart: unless-stopped
+    profiles:
+      - proxy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - chisa-network
+
+volumes:
+  postgres_data:
+    name: chisa_postgres_data
+  ninerouter_data:
+    name: chisa_ninerouter_data
+  certbot_conf:
+    name: chisa_certbot_conf
+  certbot_www:
+    name: chisa_certbot_www
+
+networks:
+  chisa-network:
+    name: chisa_network
+    driver: bridge
+

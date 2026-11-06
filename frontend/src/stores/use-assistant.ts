@@ -17,7 +17,7 @@ export const useAssistant = create<AssistantState>((set) => ({
       id: "init",
       role: "assistant",
       content:
-        "Hello! I am CHISA Assistant. I can help you manage your tasks, events, notes, and files. How can I help you today?",
+        "Hello! I am CH1SA Assistant. I can help you manage your tasks, events, notes, and files. How can I help you today?",
       createdAt: Date.now(),
     },
   ],
@@ -53,7 +53,7 @@ export const useAssistant = create<AssistantState>((set) => ({
           id: "init",
           role: "assistant",
           content:
-            "Hello! I am CHISA Assistant. I can help you manage your tasks, events, notes, and files. How can I help you today?",
+            "Hello! I am CH1SA Assistant. I can help you manage your tasks, events, notes, and files. How can I help you today?",
           createdAt: Date.now(),
         },
       ],

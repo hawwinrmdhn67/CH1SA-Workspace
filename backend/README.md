@@ -82,7 +82,7 @@ go run ./scripts/seed.go -all
 Start the backend server using the Go CLI:
 
 ```bash
-go run ./cmd/server
+go run ./cmd/api/main.go
 ```
 
 The server will start on port `8080` (or the port defined in your `.env` file) and connect to the database.

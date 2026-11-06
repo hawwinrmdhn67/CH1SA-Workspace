@@ -345,7 +345,7 @@ export function FloatingAssistant() {
           <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/chisa.jfif" alt="CHISA" className="object-cover" />
+                <AvatarImage src="/chisa.jpeg" alt="CHISA" className="object-cover" />
                 <AvatarFallback>
                   <Sparkles className="h-4 w-4 text-primary" />
                 </AvatarFallback>
@@ -391,7 +391,7 @@ export function FloatingAssistant() {
                     {msg.role === "user" ? (
                       <User className="h-3 w-3" />
                     ) : (
-                      <img src="/chisa.jfif" alt="CHISA" className="h-full w-full object-cover" />
+                      <img src="/chisa.jpeg" alt="CHISA" className="h-full w-full object-cover" />
                     )}
                   </div>
 
@@ -503,7 +503,7 @@ export function FloatingAssistant() {
               {isTyping && (
                 <div className="flex max-w-[80%] items-start gap-2 self-start">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted shadow-sm overflow-hidden">
-                    <img src="/chisa.jfif" alt="CHISA" className="h-full w-full object-cover animate-pulse" />
+                    <img src="/chisa.jpeg" alt="CHISA" className="h-full w-full object-cover animate-pulse" />
                   </div>
                   <div className="rounded-lg bg-muted/60 border px-3 py-2 text-sm text-foreground shadow-sm">
                     <div className="flex gap-1 items-center h-4">
@@ -580,7 +580,7 @@ export function FloatingAssistant() {
         style={{ width: avatarSize, height: avatarSize }}
       >
         <Avatar className="h-full w-full pointer-events-none">
-          <AvatarImage src="/chisa.jfif" alt="Assistant" className="object-cover" />
+          <AvatarImage src="/chisa.jpeg" alt="Assistant" className="object-cover" />
           <AvatarFallback>
             <Sparkles className="h-6 w-6 text-muted-foreground" />
           </AvatarFallback>
